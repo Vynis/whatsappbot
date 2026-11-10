@@ -1,0 +1,156 @@
+# ==============================================================================
+# .gitignore para o ecossistema Xerife Board Games Bot (Monorepo)
+# - Backend: ASP.NET Core 8 Web API (XerifeBot.Api)
+# - Frontend: Angular 18 (xerife-bot-ui)
+# - Infra: Docker, Evolution API v2, Redis, PostgreSQL, MySQL
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# 1. Arquivos de Ambiente e Credenciais (Secrets)
+# ------------------------------------------------------------------------------
+.env
+.env.*
+!.env.example
+!.env.template
+
+# Configurações locais com tokens e connection strings
+appsettings.Local.json
+appsettings.*.local.json
+appsettings.Production.json
+secrets.json
+*.PublishSettings
+
+# ------------------------------------------------------------------------------
+# 2. .NET / C# (XerifeBot.Api & Solution)
+# ------------------------------------------------------------------------------
+# Compilação e Binários
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+bld/
+[Aa]rtifacts/
+
+# Arquivos de usuário do Visual Studio / JetBrains
+*.user
+*.userosscache
+*.suo
+*.userprefs
+*.sln.docstates
+.vs/
+_ReSharper*/
+*.dotCover
+
+# Testes e Cobertura
+[Tt]est[Rr]esult*/
+TestResults/
+[Bb]uild[Ll]og.*
+*.binlog
+CodeCoverage/
+
+# Pacotes NuGet locais
+*.nupkg
+*.snupkg
+project.lock.json
+project.fragment.lock.json
+
+# ------------------------------------------------------------------------------
+# 3. Angular 18 & Node.js (xerife-bot-ui)
+# ------------------------------------------------------------------------------
+# Dependências
+node_modules/
+*/node_modules/
+
+# Builds e Cache do Angular
+.angular/
+.angular/cache/
+dist/
+out-tsc/
+bazel-out/
+*.tsbuildinfo
+
+# Logs do Node/NPM/Yarn
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# ------------------------------------------------------------------------------
+# 4. Docker, Banco de Dados & Volumes Locais
+# ------------------------------------------------------------------------------
+# Pastas de volumes locais se montadas no host
+mysql_data/
+postgres_data/
+redis_data/
+evolution_instances/
+evolution_store/
+
+# Dumps e bases de dados locais
+*.sqlite
+*.sqlite3
+*.db
+*.db-shm
+*.db-wal
+*.sql.gz
+*.sql.tar
+
+# ------------------------------------------------------------------------------
+# 5. WhatsApp & Evolution API (Sessões e Mídias)
+# ------------------------------------------------------------------------------
+instances/
+sessions/
+store/
+auth_info_baileys/
+*.qr.png
+qr-code*.png
+
+# ------------------------------------------------------------------------------
+# 6. Logs Gerais e Temporários
+# ------------------------------------------------------------------------------
+*.log
+logs/
+temp/
+tmp/
+*.tmp
+*.temp
+
+# ------------------------------------------------------------------------------
+# 7. Editores & IDEs
+# ------------------------------------------------------------------------------
+# Visual Studio Code
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.code-workspace
+
+# JetBrains (Rider, WebStorm, etc.)
+.idea/
+
+# ------------------------------------------------------------------------------
+# 8. Sistema Operacional
+# ------------------------------------------------------------------------------
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+[Dd]esktop.ini
+$RECYCLE.BIN/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+
+# Linux
+*~

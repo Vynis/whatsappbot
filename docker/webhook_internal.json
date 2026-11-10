@@ -1,0 +1,11 @@
+{
+  "webhook": {
+    "enabled": true,
+    "url": "http://xerife_api:5001/api/whatsapp/webhook",
+    "byEvents": false,
+    "base64": false,
+    "events": [
+      "MESSAGES_UPSERT"
+    ]
+  }
+}

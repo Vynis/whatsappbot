@@ -1,0 +1,146 @@
+services:
+  mysql_db:
+    image: mysql:8.0
+    container_name: xerife_mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./docker/mysql-init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u root -prootpassword || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 25
+      start_period: 45s
+    networks:
+      - xerife_net
+
+  redis_evo:
+    image: redis:7-alpine
+    container_name: xerife_redis
+    restart: always
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - xerife_net
+
+  postgres_evo:
+    image: postgres:15-alpine
+    container_name: xerife_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: evolution
+      POSTGRES_PASSWORD: evolution_password
+      POSTGRES_DB: evolution_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U evolution -d evolution_db || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - xerife_net
+
+  evolution-api:
+    image: evoapicloud/evolution-api:v2.3.7
+    container_name: xerife_evolution_api
+    restart: always
+    ports:
+      - "8080:8080"
+    environment:
+      - SERVER_TYPE=http
+      - SERVER_PORT=8080
+      - SERVER_URL=http://localhost:8080
+      - AUTHENTICATION_API_KEY=XerifeBG_Token_Secreto_2026
+      # Database Configuration (PostgreSQL - banco nativo oficial da Evolution v2)
+      - DATABASE_ENABLED=true
+      - DATABASE_PROVIDER=postgresql
+      - DATABASE_CONNECTION_URI=postgresql://evolution:evolution_password@postgres_evo:5432/evolution_db?schema=public
+      - DATABASE_CONNECTION_CLIENT_NAME=evolution_api
+      - DATABASE_SAVE_DATA_INSTANCE=true
+      - DATABASE_SAVE_DATA_NEW_MESSAGE=true
+      # Redis Cache Configuration
+      - CACHE_REDIS_ENABLED=true
+      - CACHE_REDIS_URI=redis://redis_evo:6379/1
+      - CACHE_REDIS_PREFIX_KEY=evo
+      - CACHE_REDIS_SAVE_INSTANCES=false
+      - CACHE_LOCAL_ENABLED=false
+      # Security & Webhook configuration
+      - WEBHOOK_GLOBAL_ENABLED=false
+      - DEL_INSTANCE=true
+      - CONFIG_SESSION_PHONE_CLIENT=Ubuntu
+      - QRCODE_LIMIT=30
+      - LOG_LEVEL=ERROR,WARN,DEBUG,INFO,LOG
+    volumes:
+      - evolution_instances:/evolution/instances
+      - evolution_store:/evolution/store
+    depends_on:
+      postgres_evo:
+        condition: service_healthy
+      redis_evo:
+        condition: service_healthy
+    networks:
+      - xerife_net
+
+  xerife_api:
+    build:
+      context: ./XerifeBot.Api
+      dockerfile: Dockerfile
+    container_name: xerife_api
+    restart: always
+    ports:
+      - "5001:5001"
+    environment:
+      - ConnectionStrings__DefaultConnection=Server=mysql_db;Port=3306;Database=xerifebot_db;User=root;Password=rootpassword;
+      - EvolutionApi__BaseUrl=http://evolution-api:8080
+      - EvolutionApi__ApiKey=XerifeBG_Token_Secreto_2026
+      - EvolutionApi__InstanceName=XerifeAtendimento
+      - Instagram__BaseUrl=https://graph.instagram.com/v21.0/
+      - Instagram__AccessToken=${INSTAGRAM_ACCESS_TOKEN:-EAAB_XERIFE_TEST_ACCESS_TOKEN}
+      - Instagram__AccountId=${INSTAGRAM_ACCOUNT_ID:-17841400000000000}
+      - Instagram__VerifyToken=${INSTAGRAM_VERIFY_TOKEN:-xerife_meta_verify_token_2026}
+      - Instagram__EnableExperimentalFollowerPoller=${ENABLE_EXPERIMENTAL_FOLLOWER_POLLER:-false}
+      - ASPNETCORE_URLS=http://+:5001
+      - ASPNETCORE_ENVIRONMENT=Production
+    depends_on:
+      mysql_db:
+        condition: service_healthy
+      evolution-api:
+        condition: service_started
+    networks:
+      - xerife_net
+
+  xerife_ui:
+    build:
+      context: ./xerife-bot-ui
+      dockerfile: Dockerfile
+    container_name: xerife_ui
+    restart: always
+    ports:
+      - "4202:80"
+    depends_on:
+      - xerife_api
+    networks:
+      - xerife_net
+
+networks:
+  xerife_net:
+    driver: bridge
+
+volumes:
+  mysql_data:
+  redis_data:
+  postgres_data:
+  evolution_instances:
+  evolution_store:

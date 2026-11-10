@@ -1,0 +1,248 @@
+/* Xerife Board Games - Custom Theme Palette */
+:root {
+  --xerife-primary: #8b4513;
+  --xerife-accent: #d4a373;
+  --xerife-dark: #2b1d0c;
+  --xerife-light: #fefae0;
+}
+
+.bg-xerife,
+.bg-store {
+  background: linear-gradient(135deg, #2b1d0c 0%, #150b05 100%) !important;
+  border-bottom: 2px solid #c9933b !important;
+}
+
+.btn-accent {
+  background-color: #c9933b !important;
+  color: #ffffff !important;
+  border-color: #b58231 !important;
+}
+
+.btn-accent:hover {
+  background-color: #b58231 !important;
+  color: #ffffff !important;
+}
+
+.brand-badge {
+  font-size: 1.8rem;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 6px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.status-indicator-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.status-indicator-dot.bg-success {
+  box-shadow: 0 0 8px #198754;
+}
+
+.status-indicator-dot.bg-danger {
+  box-shadow: 0 0 8px #dc3545;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #6c757d;
+  display: inline-block;
+}
+
+.status-dot.status-online,
+.status-dot.active {
+  background-color: #20c997 !important;
+  box-shadow: 0 0 8px #20c997;
+}
+
+.status-dot.status-offline {
+  background-color: #dc3545 !important;
+}
+
+.metric-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.metric-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.08) !important;
+}
+
+.metric-icon {
+  font-size: 1.6rem;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.nav-tabs .nav-link {
+  color: #6c757d;
+  border: none;
+  border-bottom: 3px solid transparent;
+  background: transparent;
+  transition: all 0.2s ease;
+}
+
+.nav-tabs .nav-link:hover {
+  color: #3d2314;
+  border-color: transparent;
+}
+
+.nav-tabs .nav-link.active {
+  color: #8b4513;
+  font-weight: 700;
+  border-bottom: 3px solid #8b4513;
+  background: transparent;
+}
+
+.avatar-circle {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: #e9ecef;
+  color: #495057;
+  font-weight: bold;
+  font-size: 1.1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #dee2e6;
+}
+
+.avatar-paused {
+  background-color: #fff3cd;
+  color: #856404;
+  border-color: #ffeeba;
+}
+
+.table-warning-subtle {
+  background-color: #fffdf5;
+}
+
+.game-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.game-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06) !important;
+}
+
+.game-switch {
+  cursor: pointer;
+  width: 2.8em !important;
+  height: 1.4em !important;
+}
+
+.game-switch:checked {
+  background-color: #198754;
+  border-color: #198754;
+}
+
+/* =========================================================================
+   Alertas e Destaques de Atendimento Humano
+   ========================================================================= */
+@keyframes pulseGlow {
+  0% {
+    box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.6);
+  }
+  70% {
+    box-shadow: 0 0 0 12px rgba(220, 53, 69, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(220, 53, 69, 0);
+  }
+}
+
+.card-pulse-warning {
+  animation: pulseGlow 2s infinite;
+  cursor: pointer;
+  border-left-color: #dc3545 !important;
+  background-color: #fffaf0 !important;
+}
+
+@keyframes bounceAlert {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px) scale(1.15);
+  }
+}
+
+.animate-bounce {
+  animation: bounceAlert 1.2s infinite;
+  display: inline-block;
+}
+
+.handover-banner {
+  background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+  border-left: 6px solid #dc3545 !important;
+  animation: pulseGlow 2.5s infinite;
+}
+
+.handover-row {
+  background-color: #fff9e6 !important;
+  border-left: 5px solid #ff9800 !important;
+}
+
+.handover-row:hover {
+  background-color: #fff3cd !important;
+}
+
+/* =========================================================================
+   Estilos do Módulo Omnichannel Instagram (@xerifebg)
+   ========================================================================= */
+
+.badge-channel-ig {
+  background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%) !important;
+  color: #ffffff !important;
+  font-weight: 600;
+  border: none;
+  box-shadow: 0 2px 5px rgba(220, 39, 67, 0.25);
+}
+
+.badge-channel-wa {
+  background-color: #25d366 !important;
+  color: #ffffff !important;
+  font-weight: 600;
+  border: none;
+  box-shadow: 0 2px 5px rgba(37, 211, 102, 0.25);
+}
+
+.bg-gradient-ig {
+  background: linear-gradient(45deg, #f09433, #dc2743, #bc1888) !important;
+  box-shadow: 0 0 8px #dc2743;
+}
+
+.avatar-instagram {
+  background: #fdf2f8 !important;
+  color: #db2777 !important;
+  border: 2px solid #f472b6 !important;
+}
+
+.btn-instagram-active {
+  background: linear-gradient(45deg, #e6683c, #dc2743, #bc1888) !important;
+  color: #ffffff !important;
+  border: none !important;
+}
+
+.comment-bubble {
+  border-left: 3px solid #6c757d !important;
+  background-color: #f8f9fa !important;
+  word-break: break-word;
+}
+
+.reply-bubble {
+  border-left: 3px solid #0d6efd !important;
+  background-color: #f0f7ff !important;
+  word-break: break-word;
+}

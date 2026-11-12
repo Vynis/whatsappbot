@@ -24,6 +24,7 @@ public class BoardGameDto
     public int MinPlayers { get; set; }
     public int MaxPlayers { get; set; }
     public decimal RentalPrice { get; set; }
+    public decimal? SalePrice { get; set; }
     public decimal? AquisitionPrice { get; set; }
     public string? LinkLudopedia { get; set; }
     public string? CopyName { get; set; }
@@ -31,6 +32,41 @@ public class BoardGameDto
     public string? Status { get; set; }
     public string? Comments { get; set; }
     public bool IsAvailable { get; set; }
+}
+
+public class CreateOrUpdateBoardGameRequest
+{
+    public string Name { get; set; } = string.Empty;
+    public string Category { get; set; } = "Geral";
+    public int MinPlayers { get; set; } = 2;
+    public int MaxPlayers { get; set; } = 4;
+    public decimal RentalPrice { get; set; }
+    public decimal? SalePrice { get; set; }
+    public decimal? AquisitionPrice { get; set; }
+    public string? LinkLudopedia { get; set; }
+    public string? CopyName { get; set; }
+    public string? Comments { get; set; }
+    public bool IsAvailable { get; set; } = true;
+}
+
+public class TenantProfileDto
+{
+    public Guid Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string Slug { get; set; } = string.Empty;
+    public BusinessType BusinessType { get; set; }
+    public string? CityOrRegion { get; set; }
+    public string? WebsiteUrl { get; set; }
+    public string Plan { get; set; } = "Free";
+    public string? WhatsAppInstanceName { get; set; }
+}
+
+public class UpdateTenantProfileRequest
+{
+    public string? Name { get; set; }
+    public BusinessType? BusinessType { get; set; }
+    public string? CityOrRegion { get; set; }
+    public string? WebsiteUrl { get; set; }
 }
 
 public class UploadCatalogResultDto

@@ -292,6 +292,25 @@ public class AiBotService : IAiBotService, IXerifeAiService
 
     public async Task<BotSettingsDto> GetSettingsAsync()
     {
+        var tenantSettings = await _dbContext.TenantSettings.FirstOrDefaultAsync();
+        if (tenantSettings != null)
+        {
+            return new BotSettingsDto
+            {
+                IsBotActiveGlobally = tenantSettings.IsBotActiveGlobally,
+                RejoyCatalogUrl = tenantSettings.WebsiteUrl ?? "https://xerifebg.rejoy.com.br/search",
+                IsAiEnabled = tenantSettings.IsAiEnabled,
+                AiProvider = tenantSettings.AiProvider,
+                AiApiKey = tenantSettings.AiApiKey ?? string.Empty,
+                AiModel = tenantSettings.AiModel,
+                AiSystemPrompt = !string.IsNullOrWhiteSpace(tenantSettings.AiSystemPrompt)
+                    ? tenantSettings.AiSystemPrompt
+                    : GetDefaultSystemPrompt(),
+                LastSyncAt = tenantSettings.LastCatalogSyncAt,
+                TotalGamesInDb = await _dbContext.BoardGames.CountAsync()
+            };
+        }
+
         var settingsDict = await _dbContext.Set<BotSetting>()
             .ToDictionaryAsync(s => s.Key, s => s.Value);
 

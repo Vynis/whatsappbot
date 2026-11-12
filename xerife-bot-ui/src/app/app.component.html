@@ -1,34 +1,193 @@
-<div class="min-vh-100 bg-light d-flex flex-column font-sans">
+<!-- =========================================================================
+     TELA DE AUTENTICAÇÃO (LOGIN / REGISTRO) - QUANDO NÃO LOGADO
+     ========================================================================= -->
+<div *ngIf="!isLoggedIn" class="auth-container">
+  <div class="auth-card">
+    <div class="auth-header">
+      <div class="fs-1 mb-2">🎲🤠</div>
+      <h1 class="h3 fw-bold mb-1 tracking-wide">Board Game Bot SaaS</h1>
+      <p class="text-white-50 small mb-0">
+        Plataforma WhatsApp com Inteligência Artificial para Locadoras e Lojas de Jogos de Tabuleiro
+      </p>
+    </div>
+
+    <div class="p-4 p-md-5">
+      <!-- Alternador de Abas de Autenticação -->
+      <div class="d-flex rounded-pill bg-light p-1 mb-4 border">
+        <button 
+          class="btn flex-grow-1 rounded-pill fw-bold py-2"
+          [class.btn-dark]="authMode === 'login'"
+          [class.btn-light]="authMode !== 'login'"
+          (click)="authMode = 'login'">
+          🔑 Entrar na Conta
+        </button>
+        <button 
+          class="btn flex-grow-1 rounded-pill fw-bold py-2"
+          [class.btn-dark]="authMode === 'register'"
+          [class.btn-light]="authMode !== 'register'"
+          (click)="authMode = 'register'">
+          ✨ Criar Nova Conta
+        </button>
+      </div>
+
+      <!-- Formulário de LOGIN -->
+      <div *ngIf="authMode === 'login'">
+        <div *ngIf="loginError" class="alert alert-danger p-2 small mb-3">
+          {{ loginError }}
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label small fw-bold text-muted text-uppercase">E-mail de Acesso</label>
+          <input 
+            type="email" 
+            class="form-control form-control-lg" 
+            placeholder="ex: contato@suajogos.com.br" 
+            [(ngModel)]="loginEmail" />
+        </div>
+
+        <div class="mb-4">
+          <label class="form-label small fw-bold text-muted text-uppercase">Senha</label>
+          <input 
+            type="password" 
+            class="form-control form-control-lg" 
+            placeholder="••••••••" 
+            [(ngModel)]="loginPassword" />
+        </div>
+
+        <button 
+          class="btn btn-accent btn-lg w-100 fw-bold shadow-sm d-flex align-items-center justify-content-center gap-2 mb-3"
+          [disabled]="isLoggingIn"
+          (click)="login()">
+          <span *ngIf="isLoggingIn" class="spinner-border spinner-border-sm"></span>
+          <span>{{ isLoggingIn ? 'Entrando...' : 'Acessar Painel da Minha Empresa' }}</span>
+        </button>
+
+        <div class="card bg-light border p-3 rounded-3 mt-4 text-center">
+          <div class="small fw-bold text-muted text-uppercase mb-1">Conta Pioneira de Demonstração</div>
+          <div class="small font-monospace text-dark">
+            <strong>E-mail:</strong> admin&#64;xerife.com.br<br>
+            <strong>Senha:</strong> AdminXerife2026!
+          </div>
+          <button class="btn btn-sm btn-outline-secondary mt-2" (click)="loginEmail = 'admin@xerife.com.br'; loginPassword = 'AdminXerife2026!'; login()">
+            ⚡ Preencher e Entrar como Xerife
+          </button>
+        </div>
+      </div>
+
+      <!-- Formulário de REGISTRO (Novo Assinante) -->
+      <div *ngIf="authMode === 'register'">
+        <div *ngIf="registerError" class="alert alert-danger p-2 small mb-3">
+          {{ registerError }}
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label small fw-bold text-muted text-uppercase">Nome da Empresa / Loja *</label>
+          <input 
+            type="text" 
+            class="form-control" 
+            placeholder="ex: Luderia Central, Covil dos Jogos..." 
+            [(ngModel)]="registerData.companyName" />
+        </div>
+
+        <div class="row g-2 mb-3">
+          <div class="col-12 col-md-6">
+            <label class="form-label small fw-bold text-muted text-uppercase">Modelo de Negócio *</label>
+            <select class="form-select" [(ngModel)]="registerData.businessType">
+              <option [ngValue]="1">Locadora de Jogos</option>
+              <option [ngValue]="2">Loja de Jogos (Venda)</option>
+              <option [ngValue]="3">Locadora & Loja (Híbrido)</option>
+            </select>
+          </div>
+          <div class="col-12 col-md-6">
+            <label class="form-label small fw-bold text-muted text-uppercase">Cidade / Região</label>
+            <input 
+              type="text" 
+              class="form-control" 
+              placeholder="ex: São Paulo - SP" 
+              [(ngModel)]="registerData.cityOrRegion" />
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label small fw-bold text-muted text-uppercase">Nome do Responsável *</label>
+          <input 
+            type="text" 
+            class="form-control" 
+            placeholder="Seu nome completo" 
+            [(ngModel)]="registerData.fullName" />
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label small fw-bold text-muted text-uppercase">E-mail de Acesso *</label>
+          <input 
+            type="email" 
+            class="form-control" 
+            placeholder="contato@empresa.com.br" 
+            [(ngModel)]="registerData.email" />
+        </div>
+
+        <div class="mb-4">
+          <label class="form-label small fw-bold text-muted text-uppercase">Senha de Acesso *</label>
+          <input 
+            type="password" 
+            class="form-control" 
+            placeholder="Mínimo 6 caracteres" 
+            [(ngModel)]="registerData.password" />
+        </div>
+
+        <button 
+          class="btn btn-success btn-lg w-100 fw-bold shadow-sm d-flex align-items-center justify-content-center gap-2 mb-3"
+          [disabled]="isRegistering"
+          (click)="register()">
+          <span *ngIf="isRegistering" class="spinner-border spinner-border-sm"></span>
+          <span>{{ isRegistering ? 'Cadastrando...' : '🚀 Criar Minha Conta Gratuita' }}</span>
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- =========================================================================
+     PAINEL PRINCIPAL DO SAAS - QUANDO AUTENTICADO
+     ========================================================================= -->
+<div *ngIf="isLoggedIn" class="min-vh-100 bg-light d-flex flex-column font-sans">
   <!-- Top Store Navbar -->
   <header class="navbar navbar-dark bg-store px-4 py-3 shadow-sm sticky-top">
     <div class="container-fluid d-flex justify-content-between align-items-center">
       <div class="d-flex align-items-center gap-3">
         <span class="fs-2">🤠🎲</span>
         <div>
-          <h1 class="h4 mb-0 fw-bold text-white tracking-wide">Xerife Board Games</h1>
-          <span class="text-white-50 small">Central Omnichannel (WhatsApp & Instagram &#64;xerifebg) & Gestão de Catálogo</span>
+          <div class="d-flex align-items-center gap-2">
+            <h1 class="h4 mb-0 fw-bold text-white tracking-wide">
+              {{ currentTenant?.name || profile?.name || 'Sua Empresa de Jogos' }}
+            </h1>
+            <span class="badge bg-warning text-dark fw-bold rounded-pill text-xs">
+              Plano {{ currentTenant?.plan || 'Free' }}
+            </span>
+            <span class="badge bg-light text-dark text-xs d-none d-md-inline">
+              {{ getBusinessTypeName(currentTenant?.businessType || profile?.businessType) }}
+            </span>
+          </div>
+          <span class="text-white-50 small">
+            Instância: <code>{{ currentTenant?.whatsAppInstanceName || 'WhatsApp Dinâmico' }}</code> | Olá, {{ currentUser?.fullName }}
+          </span>
         </div>
       </div>
 
       <!-- Quick Status Badges & Controls -->
       <div class="d-flex align-items-center gap-3">
-        <!-- Badge de Conexão do WhatsApp da Loja -->
-        <div class="badge-store-status d-flex align-items-center gap-2 px-3 py-2 rounded-pill bg-white shadow-sm">
+        <!-- Badge de Conexão do WhatsApp da Empresa -->
+        <div 
+          class="badge-store-status d-flex align-items-center gap-2 px-3 py-2 rounded-pill bg-white shadow-sm cursor-pointer"
+          (click)="activeTab = 'whatsapp'"
+          title="Clique para abrir o painel de conexão WhatsApp com QR Code">
           <span class="status-indicator-dot" [class.bg-success]="whatsAppStatus?.isConnected" [class.bg-danger]="!whatsAppStatus?.isConnected"></span>
           <div class="d-flex flex-column text-start">
-            <span class="status-title text-dark fw-bold">WhatsApp Loja</span>
+            <span class="status-title text-dark fw-bold">WhatsApp</span>
             <span class="status-desc small" [class.text-success]="whatsAppStatus?.isConnected" [class.text-danger]="!whatsAppStatus?.isConnected">
-              {{ whatsAppStatus?.isConnected ? ('Conectado (' + (whatsAppStatus?.formattedPhone || 'Online') + ')') : 'Desconectado / Pareando' }}
+              {{ whatsAppStatus?.isConnected ? ('Conectado (' + (whatsAppStatus?.formattedPhone || 'Online') + ')') : 'Desconectado (Clique p/ Conectar)' }}
             </span>
-          </div>
-        </div>
-
-        <!-- Badge de Conexão do Instagram da Loja -->
-        <div class="badge-store-status d-flex align-items-center gap-2 px-3 py-2 rounded-pill bg-white shadow-sm d-none d-lg-flex">
-          <span class="status-indicator-dot bg-gradient-ig"></span>
-          <div class="d-flex flex-column text-start">
-            <span class="status-title text-dark fw-bold">Instagram &#64;xerifebg</span>
-            <span class="status-desc small text-muted">Graph API v21.0</span>
           </div>
         </div>
 
@@ -58,23 +217,16 @@
           class="btn btn-sm btn-outline-warning text-white d-none d-md-flex align-items-center gap-1 shadow-sm"
           (click)="requestNotificationPermission()"
           title="Ativar Notificações no Desktop ao receber atendimento humano">
-          <span>🖥️ Avisos Desktop</span>
+          <span>🖥️ Avisos</span>
         </button>
 
-        <div class="d-flex align-items-center gap-2">
-          <span class="status-dot" [class.status-online]="autoRefresh" [class.status-offline]="!autoRefresh"></span>
-          <span class="text-white-50 small d-none d-md-inline">Auto-Sync (8s)</span>
-          <button 
-            class="btn btn-sm btn-outline-light py-1 px-2 text-xs" 
-            (click)="toggleAutoRefresh()" 
-            [title]="autoRefresh ? 'Pausar sincronização automática' : 'Retomar sincronização automática'">
-            {{ autoRefresh ? 'Pausar' : 'Ativar' }}
-          </button>
-        </div>
-
-        <button class="btn btn-sm btn-accent fw-semibold d-flex align-items-center gap-2 shadow-sm" (click)="loadAll()">
+        <button class="btn btn-sm btn-accent fw-semibold d-flex align-items-center gap-1 shadow-sm" (click)="loadAll()" title="Atualizar dados">
           <span>🔄</span>
-          <span class="d-none d-sm-inline">Atualizar Dados</span>
+        </button>
+
+        <!-- Botão Sair (Logout) -->
+        <button class="btn btn-sm btn-outline-danger text-white border-light d-flex align-items-center gap-1 shadow-sm" (click)="logout()" title="Sair da conta">
+          <span>🚪 Sair</span>
         </button>
       </div>
     </div>
@@ -88,11 +240,11 @@
       <div class="d-flex align-items-center gap-3">
         <span class="fs-4">⚠️</span>
         <div>
-          <strong class="text-dark">A API C# (.NET 8) não está em execução em http://localhost:5001</strong>
-          <div class="small text-dark-emphasis">Inicie a API em uma nova aba do terminal com: <code>cd XerifeBot.Api; dotnet run</code></div>
+          <strong class="text-dark">A API C# (.NET 8) não está acessível em http://localhost:5001</strong>
+          <div class="small text-dark-emphasis">Verifique se o backend está executando no terminal.</div>
         </div>
       </div>
-      <button class="btn btn-sm btn-warning text-dark font-weight-bold" (click)="loadAll()">🔄 Tentar Conectar</button>
+      <button class="btn btn-sm btn-warning text-dark font-weight-bold" (click)="loadAll()">🔄 Tentar Novamente</button>
     </div>
 
     <!-- Banner Flutuante de Alerta de Atendimento Humano -->
@@ -121,8 +273,7 @@
         <button 
           class="btn btn-danger fw-semibold d-flex align-items-center gap-1 shadow-sm px-3"
           [disabled]="isClosingSessionId === activeHandoverAlert.id"
-          (click)="closeSession(activeHandoverAlert, true)"
-          title="Finaliza o atendimento, envia mensagem de despedida no WhatsApp e reativa o robô">
+          (click)="closeSession(activeHandoverAlert, true)">
           <span *ngIf="isClosingSessionId === activeHandoverAlert.id" class="spinner-border spinner-border-sm me-1"></span>
           <span>✅</span> Encerrar Atendimento
         </button>
@@ -133,7 +284,7 @@
           <span *ngIf="isUpdatingSessionId === activeHandoverAlert.id" class="spinner-border spinner-border-sm me-1"></span>
           <span>🤖</span> Reativar Bot
         </button>
-        <button class="btn btn-sm btn-outline-secondary" (click)="dismissHandoverAlert(activeHandoverAlert)" title="Dispensar este alerta visual">
+        <button class="btn btn-sm btn-outline-secondary" (click)="dismissHandoverAlert(activeHandoverAlert)">
           ✖ Fechar
         </button>
       </div>
@@ -166,7 +317,7 @@
                    [class.text-primary]="settings.isBotActiveGlobally && settings.isAiEnabled" 
                    [class.text-success]="settings.isBotActiveGlobally && !settings.isAiEnabled">
                 <ng-container *ngIf="!settings.isBotActiveGlobally">
-                  ⏸️ Desativado (Manual)
+                  ⏸️ Desativado
                 </ng-container>
                 <ng-container *ngIf="settings.isBotActiveGlobally">
                   {{ settings.isAiEnabled ? '✨ IA Ativa (' + (settings.aiProvider === 'gemini' ? 'Gemini' : 'ChatGPT') + ')' : '🤖 Menu Padrão' }}
@@ -188,10 +339,9 @@
 
       <div class="col-12 col-sm-6 col-lg-3">
         <div 
-          class="metric-card bg-white shadow-sm rounded-3 p-3 border-start border-4 border-warning"
+          class="metric-card bg-white shadow-sm rounded-3 p-3 border-start border-4 border-warning cursor-pointer"
           [class.card-pulse-warning]="(stats?.pausedSessions ?? 0) > 0"
-          (click)="filterByHumanHandover()"
-          title="Clique para filtrar apenas atendimentos humanos pendentes">
+          (click)="filterByHumanHandover()">
           <div class="d-flex justify-content-between align-items-center">
             <div>
               <div class="text-muted small text-uppercase fw-bold d-flex align-items-center gap-1">
@@ -209,7 +359,7 @@
         <div class="metric-card bg-white shadow-sm rounded-3 p-3 border-start border-4 border-info">
           <div class="d-flex justify-content-between align-items-center">
             <div>
-              <div class="text-muted small text-uppercase fw-bold">Jogos Disponíveis</div>
+              <div class="text-muted small text-uppercase fw-bold">Jogos no Acervo</div>
               <div class="h3 mb-0 fw-bold text-info">
                 {{ stats?.availableGames ?? 0 }} <span class="fs-6 text-muted fw-normal">/ {{ stats?.totalGames ?? games.length }}</span>
               </div>
@@ -236,10 +386,12 @@
           <li class="nav-item">
             <button 
               class="nav-link py-3 px-4 fw-semibold d-flex align-items-center gap-2"
-              [class.active]="activeTab === 'comments'"
-              (click)="activeTab = 'comments'">
-              <span>📸</span> Comentários do Instagram
-              <span class="badge rounded-pill ms-1" [class.bg-danger]="comments.length > 0" [class.bg-secondary]="comments.length === 0">{{ comments.length }}</span>
+              [class.active]="activeTab === 'whatsapp'"
+              (click)="activeTab = 'whatsapp'">
+              <span>🟢</span> Conexão WhatsApp & QR Code
+              <span class="badge rounded-pill ms-1" [class.bg-success]="whatsAppStatus?.isConnected" [class.bg-danger]="!whatsAppStatus?.isConnected">
+                {{ whatsAppStatus?.isConnected ? 'Online' : 'Conectar' }}
+              </span>
             </button>
           </li>
           <li class="nav-item">
@@ -247,7 +399,7 @@
               class="nav-link py-3 px-4 fw-semibold d-flex align-items-center gap-2"
               [class.active]="activeTab === 'games'"
               (click)="activeTab = 'games'">
-              <span>🎲</span> Disponibilidade do Catálogo
+              <span>🎲</span> Catálogo de Jogos
               <span class="badge rounded-pill bg-secondary ms-1">{{ games.length }}</span>
             </button>
           </li>
@@ -256,16 +408,15 @@
               class="nav-link py-3 px-4 fw-semibold d-flex align-items-center gap-2"
               [class.active]="activeTab === 'settings'"
               (click)="activeTab = 'settings'">
-              <span>⚙️</span> Inteligência Artificial (IA)
-              <span class="badge rounded-pill ms-1" [class.bg-success]="settings.isAiEnabled" [class.bg-secondary]="!settings.isAiEnabled">
-                {{ settings.isAiEnabled ? 'IA Ligada' : 'Configurar' }}
-              </span>
+              <span>⚙️</span> Perfil & IA
             </button>
           </li>
         </ul>
       </div>
 
-      <!-- Tab Content 1: Atendimentos WhatsApp e Instagram -->
+      <!-- =====================================================================
+           Tab Content 1: Atendimentos WhatsApp e Instagram
+           ===================================================================== -->
       <div class="card-body p-4" *ngIf="activeTab === 'sessions'">
         <!-- Filter Bar -->
         <div class="row g-3 mb-4 align-items-center">
@@ -280,31 +431,6 @@
             </div>
           </div>
           <div class="col-12 col-md-7 col-lg-8 d-flex flex-wrap justify-content-md-end gap-2">
-            <!-- Filtro por Canal de Atendimento -->
-            <div class="btn-group shadow-sm">
-              <button 
-                class="btn btn-sm" 
-                [class.btn-dark]="sessionChannelFilter === 'all'" 
-                [class.btn-outline-secondary]="sessionChannelFilter !== 'all'"
-                (click)="sessionChannelFilter = 'all'">
-                Todos Canais
-              </button>
-              <button 
-                class="btn btn-sm" 
-                [class.btn-success]="sessionChannelFilter === 'WhatsApp'" 
-                [class.btn-outline-success]="sessionChannelFilter !== 'WhatsApp'"
-                (click)="sessionChannelFilter = 'WhatsApp'">
-                🟢 WhatsApp
-              </button>
-              <button 
-                class="btn btn-sm" 
-                [class.btn-instagram-active]="sessionChannelFilter === 'Instagram'" 
-                [class.btn-outline-danger]="sessionChannelFilter !== 'Instagram'"
-                (click)="sessionChannelFilter = 'Instagram'">
-                📸 Instagram Direct
-              </button>
-            </div>
-
             <!-- Filtro por Status do Robô -->
             <div class="btn-group shadow-sm">
               <button 
@@ -319,144 +445,102 @@
                 [class.btn-success]="sessionStatusFilter === 'active'" 
                 [class.btn-outline-success]="sessionStatusFilter !== 'active'"
                 (click)="sessionStatusFilter = 'active'">
-                🤖 Bot Ativo
+                Robô Ativo
               </button>
               <button 
                 class="btn btn-sm" 
                 [class.btn-warning]="sessionStatusFilter === 'paused'" 
                 [class.btn-outline-warning]="sessionStatusFilter !== 'paused'"
                 (click)="sessionStatusFilter = 'paused'">
-                🤠 Atendimento Humano
+                🚨 Atendimento Humano
               </button>
             </div>
           </div>
         </div>
 
-        <!-- Sessions Table -->
+        <!-- Table View -->
         <div class="table-responsive">
           <table class="table table-hover align-middle mb-0">
             <thead class="table-light text-uppercase text-xs fw-bold text-muted">
               <tr>
-                <th scope="col" class="ps-3">Cliente / Canal</th>
-                <th scope="col">Identificador / Telefone</th>
+                <th scope="col" class="ps-3">Cliente</th>
+                <th scope="col">Canal</th>
+                <th scope="col">Telefone / Identificador</th>
+                <th scope="col">Status do Atendimento</th>
                 <th scope="col">Última Interação</th>
-                <th scope="col">Status Atual</th>
-                <th scope="col" class="text-end pe-3">Ação Rápida</th>
+                <th scope="col" class="text-end pe-3">Ações de Conversa</th>
               </tr>
             </thead>
             <tbody>
               <tr *ngIf="isLoadingSessions">
-                <td colspan="5" class="text-center py-5 text-muted">
+                <td colspan="6" class="text-center py-5 text-muted">
                   <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
-                  Carregando atendimentos omnichannel...
+                  Carregando sessões de atendimento...
                 </td>
               </tr>
               <tr *ngIf="!isLoadingSessions && filteredSessions.length === 0">
-                <td colspan="5" class="text-center py-5 text-muted">
-                  <div class="fs-1 mb-2">📫</div>
-                  <div class="fw-semibold">Nenhum atendimento encontrado</div>
-                  <div class="small">Quando clientes enviarem mensagens pelo WhatsApp ou Instagram Direct, eles aparecerão aqui automaticamente.</div>
+                <td colspan="6" class="text-center py-5 text-muted">
+                  <div class="fs-1 mb-2">💬</div>
+                  <div class="fw-semibold">Nenhuma sessão encontrada.</div>
                 </td>
               </tr>
-              <tr *ngFor="let session of filteredSessions" class="transition-row" [class.handover-row]="session.isCurrentlyPaused">
+              <tr *ngFor="let session of filteredSessions" [class.handover-row]="session.isCurrentlyPaused">
                 <td class="ps-3 fw-bold text-dark">
                   <div class="d-flex align-items-center gap-2">
-                    <span class="avatar-circle" 
-                          [class.avatar-instagram]="session.channel === 'Instagram'"
-                          [class.avatar-paused]="session.isCurrentlyPaused && session.channel !== 'Instagram'" 
-                          [class.bg-secondary-subtle]="!session.isCurrentlyPaused && session.channel !== 'Instagram'" 
-                          [class.text-secondary]="!session.isCurrentlyPaused && session.channel !== 'Instagram'">
+                    <span class="avatar-circle" [class.avatar-paused]="session.isCurrentlyPaused">
                       {{ (session.pushName || 'C').charAt(0).toUpperCase() }}
                     </span>
                     <div>
-                      <div class="d-flex align-items-center gap-2 flex-wrap">
-                        <span>{{ session.pushName || 'Cliente' }}</span>
-                        <!-- Badge do Canal -->
-                        <span *ngIf="session.channel === 'Instagram'" class="badge badge-channel-ig rounded-pill px-2 py-0 text-xs">
-                          📸 Instagram
-                        </span>
-                        <span *ngIf="!session.channel || session.channel === 'WhatsApp'" class="badge badge-channel-wa rounded-pill px-2 py-0 text-xs">
-                          🟢 WhatsApp
-                        </span>
-                        <span *ngIf="session.isCurrentlyPaused" class="badge bg-danger text-white rounded-pill px-2 py-0 text-xs">HUMANO</span>
-                      </div>
+                      <div class="text-dark fw-bold">{{ session.pushName }}</div>
                       <div class="text-muted text-xs font-monospace">{{ session.remoteJid }}</div>
                     </div>
                   </div>
                 </td>
-                <td class="font-monospace text-secondary">
-                  <span *ngIf="session.channel === 'Instagram'" class="fw-semibold text-dark">
-                    {{ session.formattedPhone || session.remoteJid }}
+                <td>
+                  <span *ngIf="session.channel === 'Instagram'" class="badge badge-channel-ig px-2 py-1 rounded-pill">
+                    📸 Instagram
                   </span>
-                  <span *ngIf="!session.channel || session.channel === 'WhatsApp'">
-                    {{ session.formattedPhone || session.remoteJid.split('@')[0] }}
+                  <span *ngIf="!session.channel || session.channel === 'WhatsApp'" class="badge badge-channel-wa px-2 py-1 rounded-pill">
+                    🟢 WhatsApp
                   </span>
+                </td>
+                <td class="font-monospace text-dark">{{ session.formattedPhone || '-' }}</td>
+                <td>
+                  <span *ngIf="session.isCurrentlyPaused" class="badge bg-danger px-3 py-2 rounded-pill d-inline-flex align-items-center gap-1 shadow-sm">
+                    <span class="animate-bounce">🚨</span> Atendimento Humano
+                  </span>
+                  <span *ngIf="!session.isCurrentlyPaused" class="badge bg-success-subtle text-success border border-success px-3 py-2 rounded-pill d-inline-flex align-items-center gap-1">
+                    <span>🤖</span> Robô Ativo
+                  </span>
+                  <div *ngIf="session.isCurrentlyPaused && session.pauseReason" class="small text-muted mt-1">
+                    {{ session.pauseReason }}
+                  </div>
                 </td>
                 <td class="text-muted small">
                   <div>{{ formatDate(session.lastInteractionAt) }}</div>
                 </td>
-                <td>
-                  <div *ngIf="session.isCurrentlyPaused">
-                    <span class="badge bg-warning-subtle text-warning-emphasis border border-warning px-3 py-2 rounded-pill d-inline-flex align-items-center gap-1">
-                      <span>🤠</span> Atendimento Humano (até {{ getTimeFormatted(session.botPausedUntil) }})
-                    </span>
-                    <div *ngIf="session.pauseReason" class="text-danger-emphasis text-xs mt-1 fw-semibold d-flex align-items-center gap-1">
-                      <span>📌</span> {{ session.pauseReason }}
-                    </div>
-                  </div>
-                  <div *ngIf="!session.isCurrentlyPaused">
-                    <span class="badge bg-success-subtle text-success-emphasis border border-success px-3 py-2 rounded-pill d-inline-flex align-items-center gap-1">
-                      <span>🤖</span> Robô Respondendo
-                    </span>
-                  </div>
-                </td>
                 <td class="text-end pe-3">
-                  <div class="d-inline-flex align-items-center gap-2">
-                    <!-- Botão de Ação Direta no Canal -->
-                    <button 
-                      *ngIf="session.channel === 'Instagram'"
-                      class="btn btn-sm btn-outline-danger d-inline-flex align-items-center gap-1"
-                      (click)="openChannelAction(session)"
-                      title="Abrir Instagram Direct">
-                      <span>📸</span> Direct
+                  <div class="d-flex justify-content-end gap-1 flex-wrap">
+                    <button class="btn btn-sm btn-success fw-semibold d-inline-flex align-items-center gap-1 shadow-sm" (click)="openChannelAction(session)">
+                      <span>💬</span> Conversar
                     </button>
-                    <button 
-                      *ngIf="!session.channel || session.channel === 'WhatsApp'"
-                      class="btn btn-sm btn-outline-dark d-inline-flex align-items-center gap-1"
-                      (click)="openWhatsAppWeb(session)"
-                      title="Abrir no WhatsApp Web">
-                      <span>💬</span> WhatsApp
-                    </button>
-
-                    <!-- Encerrar atendimento -->
                     <button 
                       *ngIf="session.isCurrentlyPaused" 
-                      class="btn btn-sm btn-danger text-white d-inline-flex align-items-center gap-1 shadow-sm"
-                      [disabled]="isClosingSessionId === session.id"
-                      (click)="closeSession(session, true)"
-                      title="Encerrar atendimento humano e enviar mensagem de despedida">
-                      <span *ngIf="isClosingSessionId === session.id" class="spinner-border spinner-border-sm me-1"></span>
+                      class="btn btn-sm btn-outline-danger fw-semibold"
+                      (click)="closeSession(session, true)">
                       <span>✅</span> Encerrar
                     </button>
-
-                    <!-- Pausar ou Reativar Robô (1 Clique para ambos os canais) -->
                     <button 
                       *ngIf="session.isCurrentlyPaused" 
-                      class="btn btn-sm btn-outline-success d-inline-flex align-items-center gap-1"
-                      [disabled]="isUpdatingSessionId === session.id"
-                      (click)="togglePause(session)"
-                      title="Reativar respostas automáticas do robô">
-                      <span *ngIf="isUpdatingSessionId === session.id" class="spinner-border spinner-border-sm me-1"></span>
-                      <span>🤖</span> Reativar Robô
+                      class="btn btn-sm btn-outline-success"
+                      (click)="togglePause(session)">
+                      <span>🤖</span> Reativar Bot
                     </button>
                     <button 
                       *ngIf="!session.isCurrentlyPaused" 
-                      class="btn btn-sm btn-outline-warning text-dark-emphasis d-inline-flex align-items-center gap-1"
-                      [disabled]="isUpdatingSessionId === session.id"
-                      (click)="togglePause(session)"
-                      title="Pausar o robô e assumir o atendimento">
-                      <span *ngIf="isUpdatingSessionId === session.id" class="spinner-border spinner-border-sm me-1"></span>
-                      <span>🤠</span> Assumir Conversa
+                      class="btn btn-sm btn-outline-warning text-dark-emphasis"
+                      (click)="togglePause(session)">
+                      <span>🤠</span> Assumir
                     </button>
                   </div>
                 </td>
@@ -466,144 +550,136 @@
         </div>
       </div>
 
-      <!-- Tab Content 2: Comentários do Instagram -->
-      <div class="card-body p-4" *ngIf="activeTab === 'comments'">
-        <!-- Top Bar & Action -->
-        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
-          <div>
-            <h2 class="h5 fw-bold text-dark mb-1">Gatilho Automático Comment-to-DM (Instagram Graph API v21.0)</h2>
-            <p class="text-muted small mb-0">
-              Comentários nos posts do <strong>&#64;xerifebg</strong> recebem resposta pública da IA e um Direct com o cupom <strong>VEMPRAXERIFE</strong>.
-            </p>
-          </div>
-          <div class="d-flex align-items-center gap-2">
-            <button 
-              class="btn btn-sm btn-outline-danger d-flex align-items-center gap-2 px-3 py-2 rounded-pill shadow-sm fw-semibold"
-              [disabled]="isSettingUpIceBreakers"
-              (click)="setupIceBreakers()"
-              title="Configura a saudação e os 3 botões oficiais de Ice Breakers no Direct do Instagram (&#64;xerifebg)">
-              <span *ngIf="isSettingUpIceBreakers" class="spinner-border spinner-border-sm"></span>
-              <span *ngIf="!isSettingUpIceBreakers">⚡</span>
-              <span>Configurar Ice Breakers & Boas-Vindas</span>
-            </button>
-            <button class="btn btn-sm btn-light border px-3 py-2 rounded-pill" (click)="loadComments()" title="Atualizar Comentários">
-              <span>🔄</span>
-            </button>
-          </div>
-        </div>
+      <!-- =====================================================================
+           Tab Content 2: Conexão Dinâmica WhatsApp & QR Code
+           ===================================================================== -->
+      <div class="card-body p-4" *ngIf="activeTab === 'whatsapp'">
+        <div class="row justify-content-center">
+          <div class="col-12 col-xl-10">
 
-        <!-- Banner de Resultado dos Ice Breakers -->
-        <div *ngIf="iceBreakersResult" class="alert shadow-sm rounded-3 p-3 mb-4 d-flex align-items-center gap-3"
-             [class.alert-success]="iceBreakersResult.success"
-             [class.alert-danger]="!iceBreakersResult.success">
-          <span class="fs-4">{{ iceBreakersResult.success ? '🎉' : '⚠️' }}</span>
-          <div>
-            <strong>{{ iceBreakersResult.success ? 'Sucesso!' : 'Atenção!' }}</strong>
-            <div class="small">{{ iceBreakersResult.message }}</div>
-          </div>
-        </div>
-
-        <!-- Search Bar -->
-        <div class="row g-3 mb-4 align-items-center">
-          <div class="col-12 col-md-6">
-            <div class="input-group">
-              <span class="input-group-text bg-white border-end-0">🔍</span>
-              <input 
-                type="text" 
-                class="form-control border-start-0 ps-0" 
-                placeholder="Buscar por &#64;usuário, comentário ou resposta da IA..." 
-                [(ngModel)]="commentSearch" />
-            </div>
-          </div>
-          <div class="col-12 col-md-6 text-md-end text-muted small">
-            Total de comentários monitorados: <strong>{{ filteredComments.length }}</strong>
-          </div>
-        </div>
-
-        <!-- Comments Table -->
-        <div class="table-responsive">
-          <table class="table table-hover align-middle mb-0">
-            <thead class="table-light text-uppercase text-xs fw-bold text-muted">
-              <tr>
-                <th scope="col" class="ps-3">Seguidor</th>
-                <th scope="col" style="max-width: 250px;">Comentário no Post</th>
-                <th scope="col" style="max-width: 320px;">Resposta Pública da IA</th>
-                <th scope="col">Direct de Boas-Vindas</th>
-                <th scope="col">Data / Hora</th>
-                <th scope="col" class="text-end pe-3">Ação</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngIf="isLoadingComments">
-                <td colspan="6" class="text-center py-5 text-muted">
-                  <div class="spinner-border spinner-border-sm text-danger me-2" role="status"></div>
-                  Carregando comentários do Instagram...
-                </td>
-              </tr>
-              <tr *ngIf="!isLoadingComments && filteredComments.length === 0">
-                <td colspan="6" class="text-center py-5 text-muted">
-                  <div class="fs-1 mb-2">📸💬</div>
-                  <div class="fw-semibold">Nenhum comentário registrado ainda</div>
-                  <div class="small text-muted mt-1">
-                    Assim que seguidores comentarem nos posts do &#64;xerifebg, a IA responderá publicamente e enviará o Direct automático com cupom!
-                  </div>
-                </td>
-              </tr>
-              <tr *ngFor="let item of filteredComments" class="transition-row">
-                <td class="ps-3 fw-bold text-dark">
-                  <div class="d-flex align-items-center gap-2">
-                    <span class="avatar-circle avatar-instagram">
-                      {{ (item.username || 'I').charAt(0).toUpperCase() }}
-                    </span>
+            <!-- Card de Status Atual da Instância -->
+            <div class="card mb-4 border shadow-sm rounded-3">
+              <div class="card-body p-4">
+                <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+                  <div class="d-flex align-items-center gap-3">
+                    <div class="status-indicator-dot p-3 d-flex align-items-center justify-content-center rounded-circle fs-3"
+                         [class.bg-success]="whatsAppStatus?.isConnected"
+                         [class.bg-danger]="!whatsAppStatus?.isConnected">
+                      {{ whatsAppStatus?.isConnected ? '🟢' : '🔴' }}
+                    </div>
                     <div>
-                      <div class="text-dark fw-bold">&#64;{{ item.username }}</div>
-                      <div class="text-muted text-xs font-monospace">ID: {{ item.commentId }}</div>
+                      <h2 class="h5 fw-bold text-dark mb-1">
+                        WhatsApp: {{ whatsAppStatus?.isConnected ? 'Conectado e Operando' : 'Desconectado' }}
+                      </h2>
+                      <div class="text-muted small">
+                        <strong>Instância Exclusiva:</strong> <code>{{ currentTenant?.whatsAppInstanceName }}</code>
+                        <span *ngIf="whatsAppStatus?.formattedPhone" class="ms-2">
+                          • <strong>Número Vinculado:</strong> {{ whatsAppStatus?.formattedPhone }}
+                        </span>
+                      </div>
                     </div>
                   </div>
-                </td>
-                <td style="max-width: 250px;">
-                  <div class="comment-bubble p-2 rounded-3 bg-light text-dark small border">
-                    "{{ item.commentText }}"
+
+                  <div class="d-flex align-items-center gap-2 flex-wrap">
+                    <button 
+                      *ngIf="!whatsAppStatus?.isConnected"
+                      class="btn btn-success fw-bold px-4 py-2 shadow-sm d-flex align-items-center gap-2"
+                      [disabled]="isConnectingWhatsApp"
+                      (click)="requestWhatsAppConnect()">
+                      <span *ngIf="isConnectingWhatsApp" class="spinner-border spinner-border-sm"></span>
+                      <span>📲 {{ qrCodeBase64 ? 'Atualizar QR Code' : 'Conectar com QR Code' }}</span>
+                    </button>
+
+                    <button 
+                      *ngIf="whatsAppStatus?.isConnected"
+                      class="btn btn-outline-danger fw-semibold px-3 py-2 shadow-sm"
+                      [disabled]="whatsAppActionLoading"
+                      (click)="disconnectWhatsApp()">
+                      <span>Desconectar Sessão</span>
+                    </button>
+
+                    <button 
+                      class="btn btn-light border fw-semibold px-3 py-2"
+                      [disabled]="whatsAppActionLoading"
+                      (click)="restartWhatsApp()">
+                      <span>🔄 Reiniciar</span>
+                    </button>
                   </div>
-                </td>
-                <td style="max-width: 320px;">
-                  <div *ngIf="item.publicReplyText" class="reply-bubble p-2 rounded-3 bg-primary-subtle text-primary-emphasis small border border-primary-subtle">
-                    <span class="badge bg-primary text-white text-xs me-1">IA Xerife</span>
-                    {{ item.publicReplyText }}
+                </div>
+              </div>
+            </div>
+
+            <!-- Área Central do QR Code -->
+            <div *ngIf="!whatsAppStatus?.isConnected" class="card border shadow-sm rounded-3 text-center p-4 p-md-5 mb-4 bg-light-subtle">
+              <h3 class="h4 fw-bold text-dark mb-2">Conecte o WhatsApp da sua Empresa</h3>
+              <p class="text-muted small max-w-lg mx-auto mb-4">
+                Escaneie o QR Code abaixo pelo WhatsApp do seu celular para ativar as respostas automáticas e o atendimento com Inteligência Artificial para seus clientes.
+              </p>
+
+              <!-- QR Code Renderizado -->
+              <div *ngIf="qrCodeBase64" class="mb-4">
+                <div class="qr-code-box">
+                  <img [src]="qrCodeBase64" alt="QR Code WhatsApp" class="qr-code-img" />
+                </div>
+                <div *ngIf="pairingCode" class="mt-3">
+                  <span class="badge bg-dark font-monospace fs-6 px-3 py-2">
+                    Código de Pareamento: {{ pairingCode }}
+                  </span>
+                </div>
+                <div class="text-success fw-semibold mt-3 small">
+                  {{ whatsAppConnectMessage }}
+                </div>
+              </div>
+
+              <!-- Estado Aguardando Solicitação -->
+              <div *ngIf="!qrCodeBase64 && !isConnectingWhatsApp" class="py-4">
+                <div class="fs-1 mb-3">📱💬</div>
+                <button class="btn btn-success btn-lg fw-bold px-4 py-3 shadow" (click)="requestWhatsAppConnect()">
+                  ✨ Gerar QR Code para Conectar
+                </button>
+              </div>
+
+              <!-- Loading Spinner -->
+              <div *ngIf="isConnectingWhatsApp" class="py-5">
+                <div class="spinner-border text-success mb-3" style="width: 3rem; height: 3rem;" role="status"></div>
+                <div class="fw-semibold text-dark">Gerando sessão na Evolution API...</div>
+                <div class="small text-muted mt-1">Aguarde alguns segundos enquanto preparamos o QR Code.</div>
+              </div>
+
+              <!-- Passo a Passo de Conexão -->
+              <div class="row g-3 mt-4 text-start justify-content-center">
+                <div class="col-12 col-md-4">
+                  <div class="card bg-white border p-3 rounded-3 h-100">
+                    <div class="fw-bold text-dark mb-1">1. Abra o WhatsApp</div>
+                    <div class="small text-muted">No seu celular (WhatsApp normal ou Business), toque em <strong>Menu (três pontos)</strong> ou <strong>Configurações</strong>.</div>
                   </div>
-                  <span *ngIf="!item.publicReplyText" class="text-muted small italic">Sem resposta pública</span>
-                </td>
-                <td>
-                  <span *ngIf="item.privateDmSent" class="badge bg-success-subtle text-success border border-success px-3 py-2 rounded-pill d-inline-flex align-items-center gap-1">
-                    <span>✅</span> Direct Enviado (VEMPRAXERIFE)
-                  </span>
-                  <span *ngIf="!item.privateDmSent" class="badge bg-secondary-subtle text-secondary border px-3 py-2 rounded-pill d-inline-flex align-items-center gap-1">
-                    <span>⏸️</span> Direct Pendente
-                  </span>
-                </td>
-                <td class="text-muted small">
-                  <div>{{ formatDate(item.createdAt) }}</div>
-                </td>
-                <td class="text-end pe-3">
-                  <a 
-                    href="https://www.instagram.com/xerifebg" 
-                    target="_blank" 
-                    class="btn btn-sm btn-outline-danger d-inline-flex align-items-center gap-1"
-                    title="Ver no Instagram">
-                    <span>📸</span> Ver Post
-                  </a>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+                </div>
+                <div class="col-12 col-md-4">
+                  <div class="card bg-white border p-3 rounded-3 h-100">
+                    <div class="fw-bold text-dark mb-1">2. Aparelhos Conectados</div>
+                    <div class="small text-muted">Selecione a opção <strong>Aparelhos Conectados</strong> e toque no botão <strong>Conectar um Aparelho</strong>.</div>
+                  </div>
+                </div>
+                <div class="col-12 col-md-4">
+                  <div class="card bg-white border p-3 rounded-3 h-100">
+                    <div class="fw-bold text-dark mb-1">3. Escaneie o Código</div>
+                    <div class="small text-muted">Aponte a câmera do seu celular para o QR Code gerado nesta tela e a conexão será ativada instantaneamente!</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
         </div>
       </div>
 
-      <!-- Tab Content 2: Catálogo de Jogos -->
+      <!-- =====================================================================
+           Tab Content 3: Catálogo de Jogos
+           ===================================================================== -->
       <div class="card-body p-4" *ngIf="activeTab === 'games'">
-        <!-- Filter and Sync Bar -->
+        <!-- Filter and Action Bar -->
         <div class="row g-3 mb-4 align-items-center">
-          <div class="col-12 col-md-5">
+          <div class="col-12 col-md-4">
             <div class="input-group">
               <span class="input-group-text bg-white border-end-0">🔍</span>
               <input 
@@ -613,7 +689,8 @@
                 [(ngModel)]="gameSearch" />
             </div>
           </div>
-          <div class="col-12 col-md-7 d-flex justify-content-md-end align-items-center gap-2 flex-wrap">
+
+          <div class="col-12 col-md-8 d-flex justify-content-md-end align-items-center gap-2 flex-wrap">
             <div class="btn-group shadow-sm">
               <button 
                 class="btn btn-sm" 
@@ -634,17 +711,21 @@
                 [class.btn-secondary]="gameAvailabilityFilter === 'rented'" 
                 [class.btn-outline-secondary]="gameAvailabilityFilter !== 'rented'"
                 (click)="gameAvailabilityFilter = 'rented'">
-                Alugados
+                Alugados / Indisponíveis
               </button>
             </div>
+
+            <!-- Botão Adicionar Jogo Manual -->
+            <button class="btn btn-sm btn-success fw-bold d-flex align-items-center gap-1 shadow-sm px-3" (click)="openNewGameModal()">
+              <span>➕</span> Novo Jogo
+            </button>
 
             <!-- Ações do Catálogo: Download Modelo, Zerar e Upload -->
             <button 
               class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1 shadow-sm"
               (click)="downloadTemplate()"
-              title="Baixar modelo de planilha CSV para preenchimento">
-              <span>📥</span>
-              <span>Modelo CSV</span>
+              title="Baixar modelo de planilha CSV">
+              <span>📥 Modelo CSV</span>
             </button>
 
             <button 
@@ -653,8 +734,7 @@
               (click)="clearCatalog()"
               title="Zerar todos os jogos do catálogo">
               <span *ngIf="isClearing" class="spinner-border spinner-border-sm"></span>
-              <span *ngIf="!isClearing">🗑️</span>
-              <span>Zerar Catálogo</span>
+              <span *ngIf="!isClearing">🗑️ Zerar Catálogo</span>
             </button>
 
             <button 
@@ -671,7 +751,7 @@
           <div class="card-body p-4">
             <div class="d-flex justify-content-between align-items-center mb-3">
               <h3 class="h6 fw-bold text-dark mb-0 d-flex align-items-center gap-2">
-                <span>📤</span> Importação Manual de Catálogo (.CSV)
+                <span>📤</span> Importação em Lote (.CSV)
               </h3>
               <button class="btn btn-sm btn-outline-secondary" (click)="toggleUploadPanel()">✖</button>
             </div>
@@ -698,7 +778,6 @@
               </div>
             </div>
 
-            <!-- Banner com o resultado do upload -->
             <div *ngIf="uploadResult" class="alert mt-3 mb-0 p-3" [class.alert-success]="uploadResult.success" [class.alert-danger]="!uploadResult.success">
               <div class="fw-bold">{{ uploadResult.success ? '✔ Catálogo Atualizado!' : '❌ Erro na Importação' }}</div>
               <div class="small">{{ uploadResult.message }}</div>
@@ -714,7 +793,8 @@
 
         <div *ngIf="!isLoadingGames && filteredGames.length === 0" class="text-center py-5 text-muted">
           <div class="fs-1 mb-2">🎲</div>
-          <div class="fw-semibold">Nenhum jogo encontrado com os filtros atuais.</div>
+          <div class="fw-semibold">Nenhum jogo cadastrado no momento.</div>
+          <button class="btn btn-success btn-sm mt-3" (click)="openNewGameModal()">➕ Cadastrar Meu Primeiro Jogo</button>
         </div>
 
         <div class="row g-3" *ngIf="!isLoadingGames && filteredGames.length > 0">
@@ -728,21 +808,43 @@
                       {{ game.isAvailable ? 'Disponível' : 'Alugado' }}
                     </span>
                   </div>
-                  <div class="badge bg-light text-secondary border mb-3">{{ game.category }}</div>
+                  <div class="d-flex align-items-center gap-2 mb-2">
+                    <span class="badge bg-light text-secondary border">{{ game.category }}</span>
+                    <span class="badge bg-light text-muted border">👥 {{ game.minPlayers }} a {{ game.maxPlayers }} jogadores</span>
+                  </div>
                   
                   <div class="small text-muted mb-3 d-flex flex-column gap-1">
-                    <div>👥 <strong>Jogadores:</strong> {{ game.minPlayers }} a {{ game.maxPlayers }} jogadores</div>
-                    <div>🌐 <strong>Valores & Períodos:</strong> Consulte no site oficial</div>
+                    <div *ngIf="game.rentalPrice > 0">
+                      💰 <strong>Aluguel:</strong> {{ game.rentalPrice | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}
+                    </div>
+                    <div *ngIf="game.salePrice && game.salePrice > 0" class="text-primary fw-semibold">
+                      🏷️ <strong>Venda:</strong> {{ game.salePrice | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}
+                    </div>
+                    <div *ngIf="game.linkLudopedia">
+                      🔗 <a [href]="game.linkLudopedia" target="_blank" class="text-decoration-none">Ver na Ludopedia</a>
+                    </div>
+                    <div *ngIf="game.comments" class="text-muted text-xs italic">
+                      "{{ game.comments }}"
+                    </div>
                   </div>
                 </div>
 
-                <!-- Toggle Switch -->
+                <!-- Ações e Toggle Switch -->
                 <div class="pt-3 border-top d-flex justify-content-between align-items-center">
-                  <span class="small fw-semibold" [class.text-success]="game.isAvailable" [class.text-muted]="!game.isAvailable">
-                    {{ game.isAvailable ? '✔ Pronto para Locação' : '⏳ Em posse de cliente' }}
-                  </span>
+                  <div class="d-flex gap-1">
+                    <button class="btn btn-sm btn-outline-primary py-1 px-2" (click)="openEditGameModal(game)" title="Editar Jogo">
+                      ✏️ Editar
+                    </button>
+                    <button 
+                      class="btn btn-sm btn-outline-danger py-1 px-2" 
+                      [disabled]="isDeletingGameId === game.id"
+                      (click)="deleteGame(game)" 
+                      title="Excluir Jogo">
+                      🗑️
+                    </button>
+                  </div>
 
-                  <div class="form-check form-switch m-0">
+                  <div class="form-check form-switch m-0 d-flex align-items-center gap-1">
                     <input 
                       class="form-check-input game-switch" 
                       type="checkbox" 
@@ -759,72 +861,70 @@
         </div>
       </div>
 
-      <!-- Tab Content 3: Configurações (IA & Catálogo Rejoy) -->
+
+
+      <!-- =====================================================================
+           Tab Content 5: Perfil da Empresa, IA & Robô
+           ===================================================================== -->
       <div class="card-body p-4" *ngIf="activeTab === 'settings'">
         
-        <!-- Feedback de Salvamento com Sucesso -->
-        <div *ngIf="settingsSaveSuccess" class="alert alert-success shadow-sm rounded-3 mb-4 p-3 d-flex align-items-center gap-3">
+        <div *ngIf="profileSaveSuccess" class="alert alert-success shadow-sm rounded-3 mb-4 p-3 d-flex align-items-center gap-3">
           <span class="fs-4">🎉</span>
           <div>
-            <strong>Configurações salvas com sucesso!</strong>
-            <div class="small">As alterações na IA e no catálogo já estão valendo para as próximas mensagens do WhatsApp.</div>
+            <strong>Perfil atualizado com sucesso!</strong>
           </div>
         </div>
 
-        <!-- Master Card: Status Geral do Robô WhatsApp -->
         <div class="row justify-content-center mb-4">
           <div class="col-12 col-xl-10">
-            <div class="card border-2 shadow-sm rounded-3" [class.border-danger]="!settings.isBotActiveGlobally" [class.border-success]="settings.isBotActiveGlobally">
-              <div class="card-body p-4 d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
-                <div class="d-flex align-items-center gap-3">
-                  <span class="fs-1">{{ settings.isBotActiveGlobally ? '🤖' : '⏸️' }}</span>
-                  <div>
-                    <div class="d-flex align-items-center gap-2 flex-wrap">
-                      <h3 class="h5 fw-bold mb-0 text-dark">Atendimento Automático do Robô</h3>
-                      <span class="badge px-3 py-1 fw-bold rounded-pill" [class.bg-success]="settings.isBotActiveGlobally" [class.bg-danger]="!settings.isBotActiveGlobally">
-                        {{ settings.isBotActiveGlobally ? 'ATIVO NO WHATSAPP' : 'DESATIVADO (SILÊNCIO TOTAL)' }}
-                      </span>
-                    </div>
-                    <p class="text-muted small mb-0 mt-1">
-                      {{ settings.isBotActiveGlobally 
-                          ? 'O robô está respondendo normalmente aos clientes no WhatsApp (via IA ou menu). Clique para pausar tudo e assumir o atendimento 100% manual.' 
-                          : 'O robô está 100% DESLIGADO. Nenhuma mensagem automática é enviada aos clientes. Todas as conversas continuam sendo salvas no painel para resposta manual.' }}
-                    </p>
+
+            <!-- Card 1: Perfil da Empresa (Multi-Tenant) -->
+            <div class="card border shadow-sm rounded-3 mb-4">
+              <div class="card-header bg-white border-bottom py-3 px-4">
+                <h3 class="h6 fw-bold mb-0 text-dark">🏢 Informações da Empresa & Marca</h3>
+              </div>
+              <div class="card-body p-4" *ngIf="profile">
+                <div class="row g-3 mb-3">
+                  <div class="col-12 col-md-6">
+                    <label class="form-label fw-bold small text-uppercase text-muted">Nome da Empresa / Loja</label>
+                    <input type="text" class="form-control" [(ngModel)]="profile.name" />
+                  </div>
+                  <div class="col-12 col-md-6">
+                    <label class="form-label fw-bold small text-uppercase text-muted">Modelo de Negócio</label>
+                    <select class="form-select" [(ngModel)]="profile.businessType">
+                      <option [ngValue]="1">Locadora de Jogos</option>
+                      <option [ngValue]="2">Loja de Jogos (Venda)</option>
+                      <option [ngValue]="3">Locadora & Loja (Híbrido)</option>
+                    </select>
                   </div>
                 </div>
-                <div class="d-flex align-items-center gap-3">
-                  <div class="form-check form-switch m-0 d-flex align-items-center gap-2">
-                    <input 
-                      class="form-check-input game-switch cursor-pointer" 
-                      type="checkbox" 
-                      role="switch" 
-                      [checked]="settings.isBotActiveGlobally"
-                      [disabled]="isTogglingGlobalBot"
-                      (change)="toggleGlobalBot()" />
+
+                <div class="row g-3 mb-3">
+                  <div class="col-12 col-md-6">
+                    <label class="form-label fw-bold small text-uppercase text-muted">Cidade / Região de Atendimento</label>
+                    <input type="text" class="form-control" placeholder="ex: Goiânia e região" [(ngModel)]="profile.cityOrRegion" />
                   </div>
-                  <button 
-                    class="btn fw-bold px-4 py-2 d-flex align-items-center gap-2 shadow-sm text-nowrap"
-                    [class.btn-danger]="settings.isBotActiveGlobally"
-                    [class.btn-success]="!settings.isBotActiveGlobally"
-                    [disabled]="isTogglingGlobalBot"
-                    (click)="toggleGlobalBot()">
-                    <span *ngIf="isTogglingGlobalBot" class="spinner-border spinner-border-sm"></span>
-                    <span>{{ settings.isBotActiveGlobally ? '⏸️ Desativar Robô' : '▶️ Ativar Robô' }}</span>
+                  <div class="col-12 col-md-6">
+                    <label class="form-label fw-bold small text-uppercase text-muted">Link do Site Oficial / Catálogo</label>
+                    <input type="text" class="form-control" placeholder="https://sualoja.com.br" [(ngModel)]="profile.websiteUrl" />
+                  </div>
+                </div>
+
+                <div class="d-flex justify-content-end">
+                  <button class="btn btn-primary fw-semibold d-flex align-items-center gap-2" [disabled]="isSavingProfile" (click)="saveProfile()">
+                    <span *ngIf="isSavingProfile" class="spinner-border spinner-border-sm"></span>
+                    <span>💾 Salvar Informações da Empresa</span>
                   </button>
                 </div>
               </div>
             </div>
-          </div>
-        </div>
 
-        <div class="row justify-content-center">
-          <!-- Configurações do Atendente Virtual com Inteligência Artificial -->
-          <div class="col-12 col-xl-10">
-            <div class="card h-100 border shadow-sm rounded-3">
+            <!-- Card 2: Atendimento com Inteligência Artificial -->
+            <div class="card border shadow-sm rounded-3">
               <div class="card-header bg-white border-bottom py-3 px-4 d-flex justify-content-between align-items-center">
                 <div class="d-flex align-items-center gap-2">
                   <span class="fs-5">✨</span>
-                  <h3 class="h6 fw-bold mb-0 text-dark">Atendente Virtual com IA (WhatsApp)</h3>
+                  <h3 class="h6 fw-bold mb-0 text-dark">Inteligência Artificial (IA) no WhatsApp</h3>
                 </div>
                 <div class="form-check form-switch m-0 d-flex align-items-center gap-2">
                   <label class="form-check-label small fw-bold" [class.text-success]="settings.isAiEnabled" [class.text-muted]="!settings.isAiEnabled">
@@ -839,10 +939,6 @@
                 </div>
               </div>
               <div class="card-body p-4">
-                <p class="text-muted small mb-3">
-                  Quando ativada, a IA responde de forma natural, consulta os jogos disponíveis no banco e recomenda títulos adequados para grupos, amigos ou família. Se desativada, o bot volta para o menu numérico tradicional (1, 2, 3...).
-                </p>
-
                 <!-- Provedor de IA -->
                 <div class="row g-3 mb-3">
                   <div class="col-12 col-sm-6">
@@ -857,15 +953,8 @@
                     <input 
                       type="text" 
                       class="form-control" 
-                      list="aiModelSuggestions"
                       [(ngModel)]="settings.aiModel" 
                       placeholder="gemini-flash-lite-latest ou gpt-4o-mini" />
-                    <datalist id="aiModelSuggestions">
-                      <option value="gemini-flash-lite-latest">Gemini Flash-Lite Latest (Rápido e Recomendado)</option>
-                      <option value="gemini-flash-latest">Gemini Flash Latest</option>
-                      <option value="gemini-3.5-flash-lite">Gemini 3.5 Flash-Lite</option>
-                      <option value="gpt-4o-mini">OpenAI GPT-4o Mini</option>
-                    </datalist>
                   </div>
                 </div>
 
@@ -886,20 +975,17 @@
                       {{ showApiKey ? 'Ocultar' : 'Mostrar' }}
                     </button>
                   </div>
-                  <div class="form-text text-muted">
-                    Para o Gemini: obtenha gratuitamente em <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener">Google AI Studio</a>.
-                  </div>
                 </div>
 
                 <!-- System Prompt -->
                 <div class="mb-3">
-                  <label class="form-label fw-bold small text-uppercase text-muted">Prompt do Sistema (Personalidade do Xerife)</label>
+                  <label class="form-label fw-bold small text-uppercase text-muted">Instruções / Personalidade do Atendente</label>
                   <textarea 
                     class="form-control font-monospace text-xs" 
                     rows="4" 
                     [(ngModel)]="settings.aiSystemPrompt"
                     placeholder="Instruções de como a IA deve se comportar..."></textarea>
-                  <div class="form-text text-muted">A lista de jogos do banco é inserida automaticamente pela aplicação em tempo real.</div>
+                  <div class="form-text text-muted">O catálogo de jogos da sua empresa é injetado no contexto em tempo real!</div>
                 </div>
 
                 <!-- Teste da IA -->
@@ -925,24 +1011,91 @@
                   </div>
                 </div>
 
+                <div class="d-flex justify-content-end">
+                  <button class="btn btn-success fw-bold px-4 py-2" [disabled]="isSavingSettings" (click)="saveSettings()">
+                    <span *ngIf="isSavingSettings" class="spinner-border spinner-border-sm"></span>
+                    <span>💾 Salvar Configurações de IA</span>
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        </div>
 
-        <!-- Botão Salvar Todas as Configurações -->
-        <div class="mt-4 d-flex justify-content-end">
-          <button 
-            class="btn btn-lg btn-success fw-bold px-4 py-2 d-flex align-items-center gap-2 shadow"
-            [disabled]="isSavingSettings"
-            (click)="saveSettings()">
-            <span *ngIf="isSavingSettings" class="spinner-border spinner-border-sm"></span>
-            <span *ngIf="!isSavingSettings">💾</span>
-            <span>{{ isSavingSettings ? 'Salvando...' : 'Salvar Todas as Configurações' }}</span>
-          </button>
+          </div>
         </div>
 
       </div>
     </div>
   </main>
+</div>
+
+<!-- =========================================================================
+     MODAL DE CADASTRO / EDIÇÃO DE JOGO (BOARD GAME CRUD)
+     ========================================================================= -->
+<div *ngIf="showGameModal" class="custom-modal-backdrop" (click)="closeGameModal()">
+  <div class="custom-modal-dialog p-4" (click)="$event.stopPropagation()">
+    <div class="d-flex justify-content-between align-items-center border-bottom pb-3 mb-3">
+      <h3 class="h5 fw-bold mb-0 text-dark">
+        {{ isEditingGame ? '✏️ Editar Jogo' : '➕ Cadastrar Novo Jogo' }}
+      </h3>
+      <button class="btn btn-sm btn-outline-secondary" (click)="closeGameModal()">✖</button>
+    </div>
+
+    <div class="overflow-auto pe-1" style="max-height: calc(85vh - 120px);">
+      <div class="mb-3">
+        <label class="form-label small fw-bold text-muted text-uppercase">Nome do Jogo *</label>
+        <input type="text" class="form-control" placeholder="ex: Catan, Dixit, Carcassonne" [(ngModel)]="gameFormData.name" />
+      </div>
+
+      <div class="row g-2 mb-3">
+        <div class="col-6">
+          <label class="form-label small fw-bold text-muted text-uppercase">Categoria</label>
+          <input type="text" class="form-control" placeholder="ex: Estratégia, Party..." [(ngModel)]="gameFormData.category" />
+        </div>
+        <div class="col-3">
+          <label class="form-label small fw-bold text-muted text-uppercase">Mín. Jogadores</label>
+          <input type="number" class="form-control" [(ngModel)]="gameFormData.minPlayers" min="1" />
+        </div>
+        <div class="col-3">
+          <label class="form-label small fw-bold text-muted text-uppercase">Máx. Jogadores</label>
+          <input type="number" class="form-control" [(ngModel)]="gameFormData.maxPlayers" min="1" />
+        </div>
+      </div>
+
+      <div class="row g-2 mb-3">
+        <div class="col-6">
+          <label class="form-label small fw-bold text-muted text-uppercase">Preço de Aluguel (R$)</label>
+          <input type="number" class="form-control" placeholder="0.00" [(ngModel)]="gameFormData.rentalPrice" step="0.50" min="0" />
+        </div>
+        <div class="col-6">
+          <label class="form-label small fw-bold text-muted text-uppercase">Preço de Venda (R$)</label>
+          <input type="number" class="form-control" placeholder="Opcional" [(ngModel)]="gameFormData.salePrice" step="0.50" min="0" />
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label small fw-bold text-muted text-uppercase">Link Ludopedia</label>
+        <input type="text" class="form-control" placeholder="https://ludopedia.com.br/jogo/..." [(ngModel)]="gameFormData.linkLudopedia" />
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label small fw-bold text-muted text-uppercase">Observações / Detalhes</label>
+        <textarea class="form-control" rows="2" placeholder="Sleeves, componentes extras, estado de conservação..." [(ngModel)]="gameFormData.comments"></textarea>
+      </div>
+
+      <div class="form-check form-switch mb-2">
+        <input class="form-check-input" type="checkbox" id="modalAvailableCheck" [(ngModel)]="gameFormData.isAvailable" />
+        <label class="form-check-label fw-bold" for="modalAvailableCheck">
+          {{ gameFormData.isAvailable ? '✔ Disponível no Acervo' : '⏳ Indisponível / Alugado' }}
+        </label>
+      </div>
+    </div>
+
+    <div class="border-top pt-3 d-flex justify-content-end gap-2 mt-3">
+      <button class="btn btn-outline-secondary" (click)="closeGameModal()">Cancelar</button>
+      <button class="btn btn-success fw-bold px-4" [disabled]="isSavingGame" (click)="saveGame()">
+        <span *ngIf="isSavingGame" class="spinner-border spinner-border-sm me-1"></span>
+        <span>{{ isSavingGame ? 'Salvando...' : 'Salvar Jogo' }}</span>
+      </button>
+    </div>
+  </div>
 </div>

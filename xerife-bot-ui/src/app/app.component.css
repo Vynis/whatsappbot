@@ -246,3 +246,74 @@
   background-color: #f0f7ff !important;
   word-break: break-word;
 }
+
+/* =========================================================================
+   SaaS Multi-Tenant: Telas de Autenticação, QR Code & Modais
+   ========================================================================= */
+
+.auth-container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #150b05 0%, #2b1d0c 50%, #3d2314 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.auth-card {
+  background: #ffffff;
+  border-radius: 20px;
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.35);
+  width: 100%;
+  max-width: 540px;
+  overflow: hidden;
+}
+
+.auth-header {
+  background: linear-gradient(135deg, #2b1d0c 0%, #150b05 100%);
+  border-bottom: 3px solid #c9933b;
+  color: #ffffff;
+  padding: 28px 24px 20px;
+  text-align: center;
+}
+
+.custom-modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1050;
+  backdrop-filter: blur(4px);
+}
+
+.custom-modal-dialog {
+  background: #ffffff;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 620px;
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+  max-height: 92vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.qr-code-box {
+  background: #ffffff;
+  border: 3px dashed #c9933b;
+  border-radius: 16px;
+  padding: 16px;
+  display: inline-block;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+}
+
+.qr-code-img {
+  width: 260px;
+  height: 260px;
+  object-fit: contain;
+}

@@ -14,6 +14,7 @@ public class EvolutionApiService : IEvolutionApiService
     private readonly ILogger<EvolutionApiService> _logger;
     private readonly string _apiKey;
     private readonly string _baseUrl;
+    private readonly string _defaultWebhookUrl;
 
     public EvolutionApiService(
         HttpClient httpClient,
@@ -27,6 +28,7 @@ public class EvolutionApiService : IEvolutionApiService
 
         _baseUrl = configuration["EvolutionApi:BaseUrl"] ?? "http://localhost:8080";
         _apiKey = configuration["EvolutionApi:ApiKey"] ?? "XerifeBG_Token_Secreto_2026";
+        _defaultWebhookUrl = configuration["EvolutionApi:WebhookUrl"] ?? "http://xerife_api:5001/api/whatsapp/webhook";
 
         if (!_httpClient.DefaultRequestHeaders.Contains("apikey"))
         {
@@ -203,6 +205,225 @@ public class EvolutionApiService : IEvolutionApiService
         {
             _logger.LogError(ex, "Erro ao buscar informacoes da instancia {InstanceName}", instanceName);
             return null;
+        }
+    }
+
+    public async Task<bool> CreateInstanceAsync(string instanceName, string? webhookUrl = null)
+    {
+        try
+        {
+            var existing = await GetInstanceInfoAsync(instanceName);
+            if (existing != null && existing.Status != "deleted" && existing.Status != "not_found")
+            {
+                _logger.LogInformation("Instância '{InstanceName}' já existe na Evolution API.", instanceName);
+                if (!string.IsNullOrWhiteSpace(webhookUrl ?? _defaultWebhookUrl))
+                {
+                    await SetWebhookAsync(instanceName, webhookUrl ?? _defaultWebhookUrl);
+                }
+                return true;
+            }
+
+            string endpoint = $"{_baseUrl.TrimEnd('/')}/instance/create";
+            var payload = new
+            {
+                instanceName = instanceName,
+                token = _apiKey,
+                qrcode = true,
+                integration = "WHATSAPP-BAILEYS",
+                reject_call = false,
+                groups_ignore = true,
+                always_online = false,
+                read_messages = false,
+                read_status = false,
+                sync_full_history = false
+            };
+
+            var content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
+            var response = await _httpClient.PostAsync(endpoint, content);
+            string responseBody = await response.Content.ReadAsStringAsync();
+
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogWarning("Evolution API retornou status {Status} ao criar instância {InstanceName}: {Body}",
+                    response.StatusCode, instanceName, responseBody);
+                return false;
+            }
+
+            _logger.LogInformation("Instância '{InstanceName}' criada com sucesso na Evolution API.", instanceName);
+
+            string targetWebhook = webhookUrl ?? _defaultWebhookUrl;
+            if (!string.IsNullOrWhiteSpace(targetWebhook))
+            {
+                await SetWebhookAsync(instanceName, targetWebhook);
+            }
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Erro ao criar instância '{InstanceName}' na Evolution API.", instanceName);
+            return false;
+        }
+    }
+
+    public async Task<bool> SetWebhookAsync(string instanceName, string webhookUrl)
+    {
+        try
+        {
+            string endpoint = $"{_baseUrl.TrimEnd('/')}/webhook/set/{instanceName}";
+            var payload = new
+            {
+                webhook = new
+                {
+                    enabled = true,
+                    url = webhookUrl,
+                    byEvents = false,
+                    base64 = false,
+                    events = new[]
+                    {
+                        "MESSAGES_UPSERT",
+                        "CONNECTION_UPDATE"
+                    }
+                }
+            };
+
+            var content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
+            var response = await _httpClient.PostAsync(endpoint, content);
+            if (response.IsSuccessStatusCode)
+            {
+                _logger.LogInformation("Webhook configurado com sucesso para {InstanceName} -> {Url}", instanceName, webhookUrl);
+                return true;
+            }
+
+            string err = await response.Content.ReadAsStringAsync();
+            _logger.LogWarning("Falha ao configurar webhook para {InstanceName}: {Error}", instanceName, err);
+            return false;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Erro ao configurar webhook para {InstanceName}", instanceName);
+            return false;
+        }
+    }
+
+    public async Task<WhatsAppConnectResultDto> ConnectInstanceAsync(string instanceName)
+    {
+        var result = new WhatsAppConnectResultDto
+        {
+            InstanceName = instanceName
+        };
+
+        try
+        {
+            var info = await GetInstanceInfoAsync(instanceName);
+            if (info != null && string.Equals(info.Status, "open", StringComparison.OrdinalIgnoreCase))
+            {
+                result.Status = "open";
+                result.IsConnected = true;
+                result.Message = "O WhatsApp desta empresa já está conectado e pronto para uso!";
+                return result;
+            }
+
+            if (info == null || info.Status == "close")
+            {
+                await CreateInstanceAsync(instanceName);
+            }
+
+            string endpoint = $"{_baseUrl.TrimEnd('/')}/instance/connect/{instanceName}";
+            var response = await _httpClient.GetAsync(endpoint);
+            string responseBody = await response.Content.ReadAsStringAsync();
+
+            if (!response.IsSuccessStatusCode)
+            {
+                result.Status = "error";
+                result.Message = $"Erro ao obter QR Code da Evolution API: {response.StatusCode}";
+                return result;
+            }
+
+            using var doc = JsonDocument.Parse(responseBody);
+            var root = doc.RootElement;
+
+            if (root.TryGetProperty("base64", out var base64El) && !string.IsNullOrWhiteSpace(base64El.GetString()))
+            {
+                result.QrCodeBase64 = base64El.GetString();
+                result.Status = "connecting";
+                result.Message = "QR Code gerado com sucesso! Aponte a câmera do WhatsApp para conectar.";
+            }
+            else if (root.TryGetProperty("qrcode", out var qrObj) && qrObj.TryGetProperty("base64", out var qrBase64))
+            {
+                result.QrCodeBase64 = qrBase64.GetString();
+                result.Status = "connecting";
+                result.Message = "QR Code gerado com sucesso! Aponte a câmera do WhatsApp para conectar.";
+            }
+
+            if (root.TryGetProperty("pairingCode", out var pairEl))
+            {
+                result.PairingCode = pairEl.GetString();
+            }
+
+            if (root.TryGetProperty("instance", out var instEl) && instEl.TryGetProperty("status", out var stEl))
+            {
+                string status = stEl.GetString() ?? "close";
+                result.Status = status;
+                result.IsConnected = string.Equals(status, "open", StringComparison.OrdinalIgnoreCase);
+            }
+
+            return result;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Erro ao conectar instância WhatsApp '{InstanceName}'.", instanceName);
+            result.Status = "error";
+            result.Message = $"Exceção ao conectar: {ex.Message}";
+            return result;
+        }
+    }
+
+    public async Task<bool> LogoutInstanceAsync(string instanceName)
+    {
+        try
+        {
+            string endpoint = $"{_baseUrl.TrimEnd('/')}/instance/logout/{instanceName}";
+            var response = await _httpClient.DeleteAsync(endpoint);
+            _logger.LogInformation("Desconectando instância '{InstanceName}' (Status: {StatusCode})", instanceName, response.StatusCode);
+            return response.IsSuccessStatusCode;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Erro ao desconectar instância '{InstanceName}'", instanceName);
+            return false;
+        }
+    }
+
+    public async Task<bool> RestartInstanceAsync(string instanceName)
+    {
+        try
+        {
+            string endpoint = $"{_baseUrl.TrimEnd('/')}/instance/restart/{instanceName}";
+            var response = await _httpClient.PutAsync(endpoint, null);
+            _logger.LogInformation("Reiniciando instância '{InstanceName}' (Status: {StatusCode})", instanceName, response.StatusCode);
+            return response.IsSuccessStatusCode;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Erro ao reiniciar instância '{InstanceName}'", instanceName);
+            return false;
+        }
+    }
+
+    public async Task<bool> DeleteInstanceAsync(string instanceName)
+    {
+        try
+        {
+            string endpoint = $"{_baseUrl.TrimEnd('/')}/instance/delete/{instanceName}";
+            var response = await _httpClient.DeleteAsync(endpoint);
+            _logger.LogInformation("Removendo instância '{InstanceName}' da Evolution API (Status: {StatusCode})", instanceName, response.StatusCode);
+            return response.IsSuccessStatusCode;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Erro ao remover instância '{InstanceName}'", instanceName);
+            return false;
         }
     }
 }

@@ -25,6 +25,15 @@ public class WhatsAppWebhookController : ControllerBase
     [HttpPost("webhook")]
     public IActionResult ReceiveWebhook([FromBody] EvolutionWebhookDto payload)
     {
+        // 0. Evento de atualização de conexão da instância (QR Code lido / conectado / desconectado)
+        if (payload != null && !string.IsNullOrWhiteSpace(payload.Event) &&
+            payload.Event.Contains("CONNECTION", StringComparison.OrdinalIgnoreCase))
+        {
+            _logger.LogInformation("Evolution API: Conexão atualizada para a instância '{Instance}' (Evento: {Event})",
+                payload.Instance, payload.Event);
+            return Ok(new { status = "connection_update_received" });
+        }
+
         // 1. Retorno Imediato para não bloquear a fila de eventos da Evolution API
         if (payload?.Data?.Key == null)
         {
@@ -58,6 +67,7 @@ public class WhatsAppWebhookController : ControllerBase
         {
             using var scope = _scopeFactory.CreateScope();
             var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var tenantContext = scope.ServiceProvider.GetRequiredService<ITenantContext>();
             var evolutionApi = scope.ServiceProvider.GetRequiredService<IEvolutionApiService>();
             var botFlow = scope.ServiceProvider.GetRequiredService<IBotFlowService>();
             var aiService = scope.ServiceProvider.GetRequiredService<IAiBotService>();
@@ -65,7 +75,7 @@ public class WhatsAppWebhookController : ControllerBase
 
             try
             {
-                await ProcessIncomingMessageAsync(payload, dbContext, evolutionApi, botFlow, aiService, logger);
+                await ProcessIncomingMessageAsync(payload, dbContext, tenantContext, evolutionApi, botFlow, aiService, logger);
             }
             catch (Exception ex)
             {
@@ -79,6 +89,7 @@ public class WhatsAppWebhookController : ControllerBase
     private static async Task ProcessIncomingMessageAsync(
         EvolutionWebhookDto payload,
         AppDbContext dbContext,
+        ITenantContext tenantContext,
         IEvolutionApiService evolutionApi,
         IBotFlowService botFlow,
         IAiBotService aiService,
@@ -91,6 +102,26 @@ public class WhatsAppWebhookController : ControllerBase
         string? messageText = payload.Data.ExtractText();
         string? pushName = payload.Data.PushName;
         string instance = !string.IsNullOrWhiteSpace(payload.Instance) ? payload.Instance : "XerifeAtendimento";
+
+        // Resolver Tenant pela instância da Evolution API (ignorando query filter de início)
+        var tenant = await dbContext.Tenants.IgnoreQueryFilters()
+            .FirstOrDefaultAsync(t => t.WhatsAppInstanceName == instance || t.Slug == instance);
+
+        if (tenant == null)
+        {
+            var xerifeTenantId = Guid.Parse("11111111-1111-1111-1111-111111111111");
+            tenant = await dbContext.Tenants.IgnoreQueryFilters().FirstOrDefaultAsync(t => t.Id == xerifeTenantId);
+        }
+
+        if (tenant != null)
+        {
+            tenantContext.SetTenantId(tenant.Id);
+        }
+        else
+        {
+            logger.LogWarning("Nenhum Tenant localizado para a instância WhatsApp '{Instance}'.", instance);
+            return;
+        }
 
         // Obter ou criar sessão do cliente
         var session = await dbContext.CustomerSessions.FirstOrDefaultAsync(s => s.RemoteJid == remoteJid);
@@ -169,15 +200,14 @@ public class WhatsAppWebhookController : ControllerBase
         await dbContext.SaveChangesAsync();
 
         // =====================================================================
-        // Trava Mestra Global: Checar se o robô está ativo globalmente
+        // Trava Mestra Global: Checar se o robô está ativo para este Tenant
         // =====================================================================
-        var settingsDict = await dbContext.BotSettings.ToDictionaryAsync(s => s.Key, s => s.Value);
-        bool isBotGloballyActive = !settingsDict.TryGetValue("IsBotActiveGlobally", out var botActiveStr) || 
-                                   !string.Equals(botActiveStr, "false", StringComparison.OrdinalIgnoreCase);
+        var tenantSettings = await dbContext.TenantSettings.FindAsync(tenant.Id);
+        bool isBotGloballyActive = tenantSettings?.IsBotActiveGlobally ?? true;
 
         if (!isBotGloballyActive)
         {
-            logger.LogInformation("⏸️ O robô está DESATIVADO GLOBALMENTE pelo painel. Mensagem de {RemoteJid} gravada no histórico sem envio de resposta automática.", remoteJid);
+            logger.LogInformation("⏸️ O robô da empresa '{TenantName}' está DESATIVADO no painel. Mensagem de {RemoteJid} gravada no histórico sem envio de resposta automática.", tenant.Name, remoteJid);
             return;
         }
 
@@ -223,7 +253,7 @@ public class WhatsAppWebhookController : ControllerBase
         }
 
         // 3. Se a IA estiver ativada nas configurações mas não gerou resposta (ex: erro de rede/cota), evitar silêncio
-        bool isAiConfigured = settingsDict.TryGetValue("IsAiEnabled", out var aiFlag) && string.Equals(aiFlag, "true", StringComparison.OrdinalIgnoreCase);
+        bool isAiConfigured = tenantSettings?.IsAiEnabled ?? false;
 
         if (isAiConfigured && string.IsNullOrWhiteSpace(botReply))
         {

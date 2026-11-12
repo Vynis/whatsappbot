@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -11,31 +12,32 @@ namespace XerifeBot.Api.Controllers;
 
 [ApiController]
 [Route("api/admin")]
+[Authorize]
 [EnableCors("AllowAngularDevClient")]
 public class AdminController : ControllerBase
 {
     private readonly AppDbContext _dbContext;
     private readonly IEvolutionApiService _evolutionApiService;
-    private readonly IInstagramGraphService _instagramGraphService;
     private readonly ICatalogImportService _catalogImportService;
     private readonly IAiBotService _aiBotService;
+    private readonly ITenantContext _tenantContext;
     private readonly IConfiguration _configuration;
     private readonly ILogger<AdminController> _logger;
 
     public AdminController(
         AppDbContext dbContext,
         IEvolutionApiService evolutionApiService,
-        IInstagramGraphService instagramGraphService,
         ICatalogImportService catalogImportService,
         IAiBotService aiBotService,
+        ITenantContext tenantContext,
         IConfiguration configuration,
         ILogger<AdminController> logger)
     {
         _dbContext = dbContext;
         _evolutionApiService = evolutionApiService;
-        _instagramGraphService = instagramGraphService;
         _catalogImportService = catalogImportService;
         _aiBotService = aiBotService;
+        _tenantContext = tenantContext;
         _configuration = configuration;
         _logger = logger;
     }
@@ -44,7 +46,15 @@ public class AdminController : ControllerBase
     public async Task<ActionResult<WhatsAppStatusDto>> GetWhatsAppStatus()
     {
         _logger.LogInformation("Recebida requisição GET /api/admin/whatsapp-status");
-        string instanceName = _configuration["EvolutionApi:InstanceName"] ?? "XerifeAtendimento";
+        var currentTenantId = _tenantContext.CurrentTenantId;
+        var tenant = currentTenantId.HasValue 
+            ? await _dbContext.Tenants.FindAsync(currentTenantId.Value) 
+            : null;
+
+        string instanceName = tenant?.WhatsAppInstanceName 
+            ?? _configuration["EvolutionApi:InstanceName"] 
+            ?? "XerifeAtendimento";
+
         var info = await _evolutionApiService.GetInstanceInfoAsync(instanceName);
 
         string rawOwner = info?.OwnerJid ?? string.Empty;
@@ -58,7 +68,89 @@ public class AdminController : ControllerBase
             IsConnected = isConnected,
             OwnerJid = rawOwner,
             FormattedPhone = formatted,
-            ProfileName = info?.ProfileName ?? "Xerife Board Games"
+            ProfileName = info?.ProfileName ?? tenant?.Name ?? "Xerife Board Games"
+        });
+    }
+
+    [HttpPost("whatsapp/connect")]
+    public async Task<ActionResult<WhatsAppConnectResultDto>> ConnectWhatsApp()
+    {
+        _logger.LogInformation("Recebida requisição POST /api/admin/whatsapp/connect");
+        var currentTenantId = _tenantContext.CurrentTenantId;
+        var tenant = currentTenantId.HasValue 
+            ? await _dbContext.Tenants.FindAsync(currentTenantId.Value) 
+            : null;
+
+        if (tenant == null)
+        {
+            return Unauthorized(new { message = "Tenant não identificado." });
+        }
+
+        if (string.IsNullOrWhiteSpace(tenant.WhatsAppInstanceName))
+        {
+            tenant.WhatsAppInstanceName = $"evo_{tenant.Slug}_{Guid.NewGuid().ToString("N")[..6]}";
+            tenant.UpdatedAt = DateTime.UtcNow;
+            await _dbContext.SaveChangesAsync();
+        }
+
+        var result = await _evolutionApiService.ConnectInstanceAsync(tenant.WhatsAppInstanceName);
+        return Ok(result);
+    }
+
+    [HttpPost("whatsapp/disconnect")]
+    public async Task<ActionResult<WhatsAppActionResponseDto>> DisconnectWhatsApp()
+    {
+        _logger.LogInformation("Recebida requisição POST /api/admin/whatsapp/disconnect");
+        var currentTenantId = _tenantContext.CurrentTenantId;
+        var tenant = currentTenantId.HasValue 
+            ? await _dbContext.Tenants.FindAsync(currentTenantId.Value) 
+            : null;
+
+        if (tenant == null || string.IsNullOrWhiteSpace(tenant.WhatsAppInstanceName))
+        {
+            return BadRequest(new WhatsAppActionResponseDto
+            {
+                Success = false,
+                Message = "Nenhuma instância WhatsApp associada a esta conta."
+            });
+        }
+
+        bool success = await _evolutionApiService.LogoutInstanceAsync(tenant.WhatsAppInstanceName);
+        return Ok(new WhatsAppActionResponseDto
+        {
+            Success = success,
+            Message = success 
+                ? "Sessão do WhatsApp desconectada com sucesso!" 
+                : "Falha ao desconectar sessão na Evolution API.",
+            Status = "close"
+        });
+    }
+
+    [HttpPost("whatsapp/restart")]
+    public async Task<ActionResult<WhatsAppActionResponseDto>> RestartWhatsApp()
+    {
+        _logger.LogInformation("Recebida requisição POST /api/admin/whatsapp/restart");
+        var currentTenantId = _tenantContext.CurrentTenantId;
+        var tenant = currentTenantId.HasValue 
+            ? await _dbContext.Tenants.FindAsync(currentTenantId.Value) 
+            : null;
+
+        if (tenant == null || string.IsNullOrWhiteSpace(tenant.WhatsAppInstanceName))
+        {
+            return BadRequest(new WhatsAppActionResponseDto
+            {
+                Success = false,
+                Message = "Nenhuma instância WhatsApp associada a esta conta."
+            });
+        }
+
+        bool success = await _evolutionApiService.RestartInstanceAsync(tenant.WhatsAppInstanceName);
+        return Ok(new WhatsAppActionResponseDto
+        {
+            Success = success,
+            Message = success 
+                ? "Instância do WhatsApp reiniciada com sucesso!" 
+                : "Falha ao reiniciar instância na Evolution API."
         });
     }
 
@@ -156,16 +248,8 @@ public class AdminController : ControllerBase
 
             try
             {
-                bool sent = false;
-                if (session.Channel == CommunicationChannel.Instagram)
-                {
-                    sent = await _instagramGraphService.SendDirectMessageAsync(session.RemoteJid, goodbyeMessage);
-                }
-                else
-                {
-                    string instanceName = _configuration["EvolutionApi:InstanceName"] ?? "XerifeAtendimento";
-                    sent = await _evolutionApiService.SendTextAsync(instanceName, session.RemoteJid, goodbyeMessage);
-                }
+                string instanceName = _configuration["EvolutionApi:InstanceName"] ?? "XerifeAtendimento";
+                bool sent = await _evolutionApiService.SendTextAsync(instanceName, session.RemoteJid, goodbyeMessage);
 
                 if (sent)
                 {
@@ -227,10 +311,135 @@ public class AdminController : ControllerBase
             MinPlayers = g.MinPlayers,
             MaxPlayers = g.MaxPlayers,
             RentalPrice = g.RentalPrice,
+            SalePrice = g.SalePrice,
+            AquisitionPrice = g.AquisitionPrice,
+            LinkLudopedia = g.LinkLudopedia,
+            CopyName = g.CopyName,
+            Slug = g.Slug,
+            Status = g.Status,
+            Comments = g.Comments,
             IsAvailable = g.IsAvailable
         });
 
         return Ok(result);
+    }
+
+    [HttpPost("games")]
+    public async Task<ActionResult<BoardGameDto>> CreateGame([FromBody] CreateOrUpdateBoardGameRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request.Name))
+        {
+            return BadRequest(new { message = "O nome do jogo é obrigatório." });
+        }
+
+        var game = new BoardGame
+        {
+            TenantId = _tenantContext.CurrentTenantId ?? Guid.Empty,
+            Name = request.Name.Trim(),
+            Category = !string.IsNullOrWhiteSpace(request.Category) ? request.Category.Trim() : "Geral",
+            MinPlayers = request.MinPlayers > 0 ? request.MinPlayers : 2,
+            MaxPlayers = request.MaxPlayers >= request.MinPlayers ? request.MaxPlayers : 4,
+            RentalPrice = request.RentalPrice,
+            SalePrice = request.SalePrice,
+            AquisitionPrice = request.AquisitionPrice,
+            LinkLudopedia = request.LinkLudopedia?.Trim(),
+            CopyName = request.CopyName?.Trim(),
+            Comments = request.Comments?.Trim(),
+            IsAvailable = request.IsAvailable,
+            Status = request.IsAvailable ? "available" : "rented"
+        };
+
+        _dbContext.BoardGames.Add(game);
+        await _dbContext.SaveChangesAsync();
+
+        _logger.LogInformation("Novo jogo '{GameName}' cadastrado com sucesso para o tenant.", game.Name);
+
+        return Ok(new BoardGameDto
+        {
+            Id = game.Id,
+            Name = game.Name,
+            Category = game.Category,
+            MinPlayers = game.MinPlayers,
+            MaxPlayers = game.MaxPlayers,
+            RentalPrice = game.RentalPrice,
+            SalePrice = game.SalePrice,
+            AquisitionPrice = game.AquisitionPrice,
+            LinkLudopedia = game.LinkLudopedia,
+            CopyName = game.CopyName,
+            Slug = game.Slug,
+            Status = game.Status,
+            Comments = game.Comments,
+            IsAvailable = game.IsAvailable
+        });
+    }
+
+    [HttpPut("games/{id:int}")]
+    public async Task<ActionResult<BoardGameDto>> UpdateGame(int id, [FromBody] CreateOrUpdateBoardGameRequest request)
+    {
+        var game = await _dbContext.BoardGames.FindAsync(id);
+        if (game == null)
+        {
+            return NotFound(new { message = $"Jogo com ID {id} não encontrado." });
+        }
+
+        if (!string.IsNullOrWhiteSpace(request.Name))
+            game.Name = request.Name.Trim();
+
+        if (!string.IsNullOrWhiteSpace(request.Category))
+            game.Category = request.Category.Trim();
+
+        if (request.MinPlayers > 0)
+            game.MinPlayers = request.MinPlayers;
+
+        if (request.MaxPlayers > 0)
+            game.MaxPlayers = request.MaxPlayers;
+
+        game.RentalPrice = request.RentalPrice;
+        game.SalePrice = request.SalePrice;
+        game.AquisitionPrice = request.AquisitionPrice;
+        game.LinkLudopedia = request.LinkLudopedia?.Trim();
+        game.CopyName = request.CopyName?.Trim();
+        game.Comments = request.Comments?.Trim();
+        game.IsAvailable = request.IsAvailable;
+        game.Status = request.IsAvailable ? "available" : "rented";
+
+        await _dbContext.SaveChangesAsync();
+
+        _logger.LogInformation("Jogo '{GameName}' atualizado com sucesso.", game.Name);
+
+        return Ok(new BoardGameDto
+        {
+            Id = game.Id,
+            Name = game.Name,
+            Category = game.Category,
+            MinPlayers = game.MinPlayers,
+            MaxPlayers = game.MaxPlayers,
+            RentalPrice = game.RentalPrice,
+            SalePrice = game.SalePrice,
+            AquisitionPrice = game.AquisitionPrice,
+            LinkLudopedia = game.LinkLudopedia,
+            CopyName = game.CopyName,
+            Slug = game.Slug,
+            Status = game.Status,
+            Comments = game.Comments,
+            IsAvailable = game.IsAvailable
+        });
+    }
+
+    [HttpDelete("games/{id:int}")]
+    public async Task<ActionResult<object>> DeleteGame(int id)
+    {
+        var game = await _dbContext.BoardGames.FindAsync(id);
+        if (game == null)
+        {
+            return NotFound(new { message = $"Jogo com ID {id} não encontrado." });
+        }
+
+        _dbContext.BoardGames.Remove(game);
+        await _dbContext.SaveChangesAsync();
+
+        _logger.LogInformation("Jogo '{GameName}' (ID {Id}) removido do catálogo com sucesso.", game.Name, id);
+        return Ok(new { success = true, message = $"Jogo '{game.Name}' excluído com sucesso!" });
     }
 
     [HttpPut("games/{id:int}/toggle-availability")]
@@ -244,6 +453,7 @@ public class AdminController : ControllerBase
         }
 
         game.IsAvailable = !game.IsAvailable;
+        game.Status = game.IsAvailable ? "available" : "rented";
         await _dbContext.SaveChangesAsync();
 
         _logger.LogInformation("Disponibilidade do jogo '{GameName}' alterada para {IsAvailable}", game.Name, game.IsAvailable);
@@ -256,7 +466,89 @@ public class AdminController : ControllerBase
             MinPlayers = game.MinPlayers,
             MaxPlayers = game.MaxPlayers,
             RentalPrice = game.RentalPrice,
+            SalePrice = game.SalePrice,
+            AquisitionPrice = game.AquisitionPrice,
+            LinkLudopedia = game.LinkLudopedia,
+            CopyName = game.CopyName,
+            Slug = game.Slug,
+            Status = game.Status,
+            Comments = game.Comments,
             IsAvailable = game.IsAvailable
+        });
+    }
+
+    [HttpGet("profile")]
+    public async Task<ActionResult<TenantProfileDto>> GetProfile()
+    {
+        var currentTenantId = _tenantContext.CurrentTenantId;
+        var tenant = currentTenantId.HasValue ? await _dbContext.Tenants.FindAsync(currentTenantId.Value) : null;
+        if (tenant == null)
+        {
+            return NotFound(new { message = "Empresa não localizada." });
+        }
+
+        var settings = await _dbContext.TenantSettings.FindAsync(tenant.Id);
+
+        return Ok(new TenantProfileDto
+        {
+            Id = tenant.Id,
+            Name = tenant.Name,
+            Slug = tenant.Slug,
+            BusinessType = tenant.BusinessType,
+            CityOrRegion = settings?.CityOrRegion,
+            WebsiteUrl = settings?.WebsiteUrl,
+            Plan = tenant.Plan,
+            WhatsAppInstanceName = tenant.WhatsAppInstanceName
+        });
+    }
+
+    [HttpPut("profile")]
+    public async Task<ActionResult<TenantProfileDto>> UpdateProfile([FromBody] UpdateTenantProfileRequest request)
+    {
+        var currentTenantId = _tenantContext.CurrentTenantId;
+        var tenant = currentTenantId.HasValue ? await _dbContext.Tenants.FindAsync(currentTenantId.Value) : null;
+        if (tenant == null)
+        {
+            return NotFound(new { message = "Empresa não localizada." });
+        }
+
+        if (!string.IsNullOrWhiteSpace(request.Name))
+            tenant.Name = request.Name.Trim();
+
+        if (request.BusinessType.HasValue)
+            tenant.BusinessType = request.BusinessType.Value;
+
+        tenant.UpdatedAt = DateTime.UtcNow;
+
+        var settings = await _dbContext.TenantSettings.FindAsync(tenant.Id);
+        if (settings == null)
+        {
+            settings = new TenantSettings { TenantId = tenant.Id };
+            _dbContext.TenantSettings.Add(settings);
+        }
+
+        if (request.CityOrRegion != null)
+            settings.CityOrRegion = request.CityOrRegion.Trim();
+
+        if (request.WebsiteUrl != null)
+            settings.WebsiteUrl = request.WebsiteUrl.Trim();
+
+        settings.UpdatedAt = DateTime.UtcNow;
+
+        await _dbContext.SaveChangesAsync();
+
+        _logger.LogInformation("Perfil da empresa '{TenantName}' atualizado com sucesso.", tenant.Name);
+
+        return Ok(new TenantProfileDto
+        {
+            Id = tenant.Id,
+            Name = tenant.Name,
+            Slug = tenant.Slug,
+            BusinessType = tenant.BusinessType,
+            CityOrRegion = settings.CityOrRegion,
+            WebsiteUrl = settings.WebsiteUrl,
+            Plan = tenant.Plan,
+            WhatsAppInstanceName = tenant.WhatsAppInstanceName
         });
     }
 
@@ -291,6 +583,27 @@ public class AdminController : ControllerBase
     [HttpGet("settings")]
     public async Task<ActionResult<BotSettingsDto>> GetSettings()
     {
+        var currentTenantId = _tenantContext.CurrentTenantId;
+        if (currentTenantId.HasValue)
+        {
+            var tenantSettings = await _dbContext.TenantSettings.FindAsync(currentTenantId.Value);
+            if (tenantSettings != null)
+            {
+                return Ok(new BotSettingsDto
+                {
+                    IsBotActiveGlobally = tenantSettings.IsBotActiveGlobally,
+                    RejoyCatalogUrl = tenantSettings.WebsiteUrl ?? "https://xerifebg.rejoy.com.br/search",
+                    IsAiEnabled = tenantSettings.IsAiEnabled,
+                    AiProvider = tenantSettings.AiProvider,
+                    AiApiKey = tenantSettings.AiApiKey ?? string.Empty,
+                    AiModel = tenantSettings.AiModel,
+                    AiSystemPrompt = tenantSettings.AiSystemPrompt ?? AiBotService.GetDefaultSystemPrompt(),
+                    LastSyncAt = tenantSettings.LastCatalogSyncAt,
+                    TotalGamesInDb = await _dbContext.BoardGames.CountAsync()
+                });
+            }
+        }
+
         var settingsDict = await _dbContext.BotSettings
             .ToDictionaryAsync(s => s.Key, s => s.Value);
 
@@ -323,6 +636,38 @@ public class AdminController : ControllerBase
     public async Task<ActionResult<BotSettingsDto>> ToggleGlobalBot()
     {
         _logger.LogInformation("Recebida requisição POST /api/admin/toggle-global-bot");
+        var currentTenantId = _tenantContext.CurrentTenantId;
+        if (currentTenantId.HasValue)
+        {
+            var tenantSettings = await _dbContext.TenantSettings.FindAsync(currentTenantId.Value);
+            if (tenantSettings != null)
+            {
+                tenantSettings.IsBotActiveGlobally = !tenantSettings.IsBotActiveGlobally;
+                tenantSettings.UpdatedAt = DateTime.UtcNow;
+
+                // Manter BotSettings legado sincronizado
+                var legacySetting = await _dbContext.BotSettings.FindAsync("IsBotActiveGlobally");
+                if (legacySetting != null)
+                {
+                    legacySetting.Value = tenantSettings.IsBotActiveGlobally.ToString().ToLower();
+                    legacySetting.UpdatedAt = DateTime.UtcNow;
+                }
+                else
+                {
+                    _dbContext.BotSettings.Add(new BotSetting
+                    {
+                        Key = "IsBotActiveGlobally",
+                        Value = tenantSettings.IsBotActiveGlobally.ToString().ToLower(),
+                        UpdatedAt = DateTime.UtcNow
+                    });
+                }
+
+                await _dbContext.SaveChangesAsync();
+                _logger.LogInformation("Estado global do robô do tenant alterado para: {State}", tenantSettings.IsBotActiveGlobally ? "ATIVO" : "DESATIVADO");
+                return await GetSettings();
+            }
+        }
+
         var setting = await _dbContext.BotSettings.FindAsync("IsBotActiveGlobally");
         bool current = true;
         if (setting != null && bool.TryParse(setting.Value, out bool parsed))
@@ -354,6 +699,60 @@ public class AdminController : ControllerBase
     [HttpPut("settings")]
     public async Task<ActionResult<BotSettingsDto>> UpdateSettings([FromBody] UpdateBotSettingsRequest request)
     {
+        var currentTenantId = _tenantContext.CurrentTenantId;
+        if (currentTenantId.HasValue)
+        {
+            var tenantSettings = await _dbContext.TenantSettings.FindAsync(currentTenantId.Value);
+            if (tenantSettings == null)
+            {
+                tenantSettings = new TenantSettings { TenantId = currentTenantId.Value };
+                _dbContext.TenantSettings.Add(tenantSettings);
+            }
+
+            if (request.IsBotActiveGlobally.HasValue)
+            {
+                tenantSettings.IsBotActiveGlobally = request.IsBotActiveGlobally.Value;
+                var legacySetting = await _dbContext.BotSettings.FindAsync("IsBotActiveGlobally");
+                if (legacySetting != null)
+                {
+                    legacySetting.Value = request.IsBotActiveGlobally.Value.ToString().ToLower();
+                    legacySetting.UpdatedAt = DateTime.UtcNow;
+                }
+                else
+                {
+                    _dbContext.BotSettings.Add(new BotSetting
+                    {
+                        Key = "IsBotActiveGlobally",
+                        Value = request.IsBotActiveGlobally.Value.ToString().ToLower(),
+                        UpdatedAt = DateTime.UtcNow
+                    });
+                }
+            }
+
+            if (request.RejoyCatalogUrl != null)
+                tenantSettings.WebsiteUrl = request.RejoyCatalogUrl.Trim();
+
+            if (request.IsAiEnabled.HasValue)
+                tenantSettings.IsAiEnabled = request.IsAiEnabled.Value;
+
+            if (request.AiProvider != null)
+                tenantSettings.AiProvider = request.AiProvider.Trim().ToLower();
+
+            if (request.AiApiKey != null)
+                tenantSettings.AiApiKey = request.AiApiKey.Trim();
+
+            if (request.AiModel != null)
+                tenantSettings.AiModel = request.AiModel.Trim();
+
+            if (request.AiSystemPrompt != null)
+                tenantSettings.AiSystemPrompt = request.AiSystemPrompt;
+
+            tenantSettings.UpdatedAt = DateTime.UtcNow;
+            await _dbContext.SaveChangesAsync();
+            _logger.LogInformation("TenantSettings atualizadas com sucesso para tenant {TenantId}!", currentTenantId.Value);
+            return await GetSettings();
+        }
+
         async Task SetSettingAsync(string key, string? value)
         {
             if (value == null) return;
@@ -469,43 +868,6 @@ public class AdminController : ControllerBase
 
         var result = await _aiBotService.TestConnectionAsync(request.Provider, apiKey, request.Model, request.Message);
         return Ok(result);
-    }
-
-    [HttpGet("instagram/comments")]
-    public async Task<ActionResult<IEnumerable<InstagramCommentLogDto>>> GetInstagramComments()
-    {
-        _logger.LogInformation("Recebida requisição GET /api/admin/instagram/comments");
-        var comments = await _dbContext.InstagramCommentLogs
-            .OrderByDescending(c => c.CreatedAt)
-            .Take(100)
-            .Select(c => new InstagramCommentLogDto
-            {
-                Id = c.Id,
-                CommentId = c.CommentId,
-                MediaId = c.MediaId,
-                Username = c.Username,
-                CommentText = c.CommentText,
-                PublicReplyText = c.PublicReplyText,
-                PrivateDmSent = c.PrivateDmSent,
-                CreatedAt = c.CreatedAt
-            })
-            .ToListAsync();
-
-        return Ok(comments);
-    }
-
-    [HttpPost("instagram/setup-icebreakers")]
-    public async Task<ActionResult<SetupIceBreakersResultDto>> SetupIceBreakers()
-    {
-        _logger.LogInformation("Recebida requisição POST /api/admin/instagram/setup-icebreakers");
-        bool success = await _instagramGraphService.SetupIceBreakersAndWelcomeAsync();
-        return Ok(new SetupIceBreakersResultDto
-        {
-            Success = success,
-            Message = success 
-                ? "Ice Breakers e Saudação de Boas-Vindas configurados com sucesso na Meta Instagram Graph API!" 
-                : "Falha ao configurar Ice Breakers. Verifique o Access Token e Permissões da Meta no appsettings.json."
-        });
     }
 
     private static string FormatWhatsAppPhone(string remoteJid)

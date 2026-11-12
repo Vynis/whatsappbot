@@ -66,14 +66,19 @@ public class InstagramWebhookController : ControllerBase
         {
             using var scope = _scopeFactory.CreateScope();
             var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-            var igService = scope.ServiceProvider.GetRequiredService<IInstagramGraphService>();
+            var tenantContext = scope.ServiceProvider.GetRequiredService<ITenantContext>();
+            var igService = scope.ServiceProvider.GetService<IInstagramGraphService>();
+            if (igService == null)
+            {
+                return;
+            }
             var aiService = scope.ServiceProvider.GetRequiredService<IAiBotService>();
             var logger = scope.ServiceProvider.GetRequiredService<ILogger<InstagramWebhookController>>();
             var config = scope.ServiceProvider.GetRequiredService<IConfiguration>();
 
             try
             {
-                await ProcessInstagramPayloadAsync(payload, dbContext, igService, aiService, config, logger);
+                await ProcessInstagramPayloadAsync(payload, dbContext, tenantContext, igService, aiService, config, logger);
             }
             catch (Exception ex)
             {
@@ -87,15 +92,33 @@ public class InstagramWebhookController : ControllerBase
     private static async Task ProcessInstagramPayloadAsync(
         InstagramWebhookPayload payload,
         AppDbContext dbContext,
+        ITenantContext tenantContext,
         IInstagramGraphService igService,
         IAiBotService aiService,
         IConfiguration configuration,
         ILogger logger)
     {
-        string pageAccountId = configuration["Instagram:AccountId"] ?? string.Empty;
+        string defaultPageAccountId = configuration["Instagram:AccountId"] ?? string.Empty;
 
         foreach (var entry in payload.Entry!)
         {
+            // Resolver Tenant pelo Instagram Account Id
+            string entryAccountId = !string.IsNullOrWhiteSpace(entry.Id) ? entry.Id : defaultPageAccountId;
+            var tenant = await dbContext.Tenants.IgnoreQueryFilters()
+                .FirstOrDefaultAsync(t => t.InstagramAccountId == entryAccountId);
+
+            if (tenant == null)
+            {
+                var xerifeGuid = Guid.Parse("11111111-1111-1111-1111-111111111111");
+                tenant = await dbContext.Tenants.IgnoreQueryFilters().FirstOrDefaultAsync(t => t.Id == xerifeGuid);
+            }
+
+            if (tenant != null)
+            {
+                tenantContext.SetTenantId(tenant.Id);
+            }
+
+            string pageAccountId = !string.IsNullOrWhiteSpace(tenant?.InstagramAccountId) ? tenant.InstagramAccountId : defaultPageAccountId;
             // =========================================================================
             // Cenário A - Mensagens no Direct (messaging)
             // =========================================================================
@@ -103,7 +126,7 @@ public class InstagramWebhookController : ControllerBase
             {
                 foreach (var msgEvent in entry.Messaging)
                 {
-                    await ProcessMessagingEventAsync(msgEvent, dbContext, igService, aiService, pageAccountId, logger);
+                    await ProcessMessagingEventAsync(msgEvent, dbContext, tenantContext, igService, aiService, pageAccountId, logger);
                 }
             }
 
@@ -116,7 +139,7 @@ public class InstagramWebhookController : ControllerBase
                 {
                     if (string.Equals(change.Field, "comments", StringComparison.OrdinalIgnoreCase) && change.Value != null)
                     {
-                        await ProcessCommentChangeAsync(change.Value, dbContext, igService, aiService, pageAccountId, logger);
+                        await ProcessCommentChangeAsync(change.Value, dbContext, tenantContext, igService, aiService, pageAccountId, logger);
                     }
                 }
             }
@@ -126,6 +149,7 @@ public class InstagramWebhookController : ControllerBase
     private static async Task ProcessMessagingEventAsync(
         InstagramMessagingEvent msgEvent,
         AppDbContext dbContext,
+        ITenantContext tenantContext,
         IInstagramGraphService igService,
         IAiBotService aiService,
         string pageAccountId,
@@ -240,10 +264,11 @@ public class InstagramWebhookController : ControllerBase
         });
         await dbContext.SaveChangesAsync();
 
-        // Verificar trava mestra global do robô
-        var settingsDict = await dbContext.BotSettings.ToDictionaryAsync(s => s.Key, s => s.Value);
-        bool isBotGloballyActive = !settingsDict.TryGetValue("IsBotActiveGlobally", out var botActiveStr) || 
-                                   !string.Equals(botActiveStr, "false", StringComparison.OrdinalIgnoreCase);
+        // Verificar trava mestra global do robô para o Tenant
+        var tenantSettings = tenantContext.CurrentTenantId.HasValue 
+            ? await dbContext.TenantSettings.FindAsync(tenantContext.CurrentTenantId.Value) 
+            : null;
+        bool isBotGloballyActive = tenantSettings?.IsBotActiveGlobally ?? true;
 
         if (!isBotGloballyActive)
         {
@@ -354,6 +379,7 @@ public class InstagramWebhookController : ControllerBase
     private static async Task ProcessCommentChangeAsync(
         InstagramCommentChangeValue commentValue,
         AppDbContext dbContext,
+        ITenantContext tenantContext,
         IInstagramGraphService igService,
         IAiBotService aiService,
         string pageAccountId,

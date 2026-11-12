@@ -12,11 +12,16 @@ namespace XerifeBot.Api.Services;
 public class CatalogImportService : ICatalogImportService
 {
     private readonly AppDbContext _dbContext;
+    private readonly ITenantContext _tenantContext;
     private readonly ILogger<CatalogImportService> _logger;
 
-    public CatalogImportService(AppDbContext dbContext, ILogger<CatalogImportService> logger)
+    public CatalogImportService(
+        AppDbContext dbContext,
+        ITenantContext tenantContext,
+        ILogger<CatalogImportService> logger)
     {
         _dbContext = dbContext;
+        _tenantContext = tenantContext;
         _logger = logger;
     }
 
@@ -24,15 +29,16 @@ public class CatalogImportService : ICatalogImportService
     {
         try
         {
-            _logger.LogWarning("Zerando catálogo de jogos da base de dados...");
-            await _dbContext.Database.ExecuteSqlRawAsync("DELETE FROM `BoardGames`;");
+            _logger.LogWarning("Zerando catálogo de jogos do tenant atual...");
+            var games = await _dbContext.BoardGames.ToListAsync();
+            _dbContext.BoardGames.RemoveRange(games);
             await _dbContext.SaveChangesAsync();
-            _logger.LogInformation("Catálogo de jogos zerado com sucesso!");
+            _logger.LogInformation("Catálogo de jogos do tenant zerado com sucesso! ({Count} jogos removidos)", games.Count);
             return true;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Erro ao zerar tabela BoardGames");
+            _logger.LogError(ex, "Erro ao zerar tabela BoardGames do tenant");
             return false;
         }
     }
@@ -158,6 +164,7 @@ public class CatalogImportService : ICatalogImportService
 
                 var game = new BoardGame
                 {
+                    TenantId = _tenantContext.CurrentTenantId ?? Guid.Empty,
                     Name = name,
                     BoardgameId = boardgameId,
                     Category = category,

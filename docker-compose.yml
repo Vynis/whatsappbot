@@ -106,11 +106,10 @@ services:
       - EvolutionApi__BaseUrl=http://evolution-api:8080
       - EvolutionApi__ApiKey=XerifeBG_Token_Secreto_2026
       - EvolutionApi__InstanceName=XerifeAtendimento
-      - Instagram__BaseUrl=https://graph.instagram.com/v21.0/
-      - Instagram__AccessToken=${INSTAGRAM_ACCESS_TOKEN:-EAAB_XERIFE_TEST_ACCESS_TOKEN}
-      - Instagram__AccountId=${INSTAGRAM_ACCOUNT_ID:-17841400000000000}
-      - Instagram__VerifyToken=${INSTAGRAM_VERIFY_TOKEN:-xerife_meta_verify_token_2026}
-      - Instagram__EnableExperimentalFollowerPoller=${ENABLE_EXPERIMENTAL_FOLLOWER_POLLER:-false}
+      - EvolutionApi__WebhookUrl=http://xerife_api:5001/api/whatsapp/webhook
+      - Jwt__SecretKey=XerifeBotOmnichannel_SaaS_Secret_Key_Secure_2026_Minimum_32_Chars!
+      - Jwt__Issuer=XerifeBotSaaS
+      - Jwt__Audience=XerifeBotSaaS
       - ASPNETCORE_URLS=http://+:5001
       - ASPNETCORE_ENVIRONMENT=Production
     depends_on:

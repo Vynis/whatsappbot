@@ -4,10 +4,13 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace XerifeBot.Api.Models;
 
 [Table("BoardGames")]
-public class BoardGame
+public class BoardGame : IMustHaveTenant
 {
     [Key]
     public int Id { get; set; }
+
+    [Required]
+    public Guid TenantId { get; set; }
 
     [MaxLength(100)]
     public string? BoardgameId { get; set; }
@@ -28,6 +31,9 @@ public class BoardGame
 
     [Column(TypeName = "decimal(10,2)")]
     public decimal RentalPrice { get; set; }
+
+    [Column(TypeName = "decimal(10,2)")]
+    public decimal? SalePrice { get; set; }
 
     public int? IdBgg { get; set; }
 

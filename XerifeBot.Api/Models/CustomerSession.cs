@@ -4,10 +4,13 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace XerifeBot.Api.Models;
 
 [Table("CustomerSessions")]
-public class CustomerSession
+public class CustomerSession : IMustHaveTenant
 {
     [Key]
     public int Id { get; set; }
+
+    [Required]
+    public Guid TenantId { get; set; }
 
     /// <summary>
     /// No WhatsApp armazena o JID (ex: 556299999999@s.whatsapp.net).

@@ -4,10 +4,13 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace XerifeBot.Api.Models;
 
 [Table("MessageLogs")]
-public class MessageLog
+public class MessageLog : IMustHaveTenant
 {
     [Key]
     public int Id { get; set; }
+
+    [Required]
+    public Guid TenantId { get; set; }
 
     [Required]
     [MaxLength(100)]

@@ -1,18 +1,20 @@
-# ==============================================================================
-# Atualizacao do container e Recriacao Limpa da Instancia
+﻿# ==============================================================================
+# Atualizacao do container e Recriacao Limpa da Instancia - Kora AI
 # ==============================================================================
 
-$baseUrl = "http://localhost:8080"
-$apiKey = "XerifeBG_Token_Secreto_2026"
-$instanceName = "XerifeAtendimento"
+param(
+    [string]$InstanceName = "KoraAtendimento",
+    [string]$ApiKey = "Kora_Token_Secreto_2026",
+    [string]$BaseUrl = "http://localhost:8080"
+)
 
 $headers = @{
-    "apikey"       = $apiKey
+    "apikey"       = $ApiKey
     "Content-Type" = "application/json"
 }
 
 Write-Host "==========================================================" -ForegroundColor Cyan
-Write-Host "[1/4] Atualizando container com persistencia em MySQL..." -ForegroundColor Yellow
+Write-Host "[1/4] Atualizando container da Evolution API..." -ForegroundColor Yellow
 Write-Host "==========================================================" -ForegroundColor Cyan
 docker compose up -d --force-recreate evolution-api
 
@@ -22,7 +24,7 @@ $retries = 0
 while (-not $online -and $retries -lt 30) {
     $retries++
     try {
-        $res = Invoke-RestMethod -Uri "$baseUrl/" -Method Get -TimeoutSec 2 -ErrorAction Stop
+        $res = Invoke-RestMethod -Uri "$BaseUrl/" -Method Get -TimeoutSec 2 -ErrorAction Stop
         $online = $true
         Write-Host "[OK] Evolution API pronta!" -ForegroundColor Green
     }
@@ -33,13 +35,13 @@ while (-not $online -and $retries -lt 30) {
 
 Write-Host "`n[3/4] Removendo sessao anterior e criando instancia limpa..." -ForegroundColor Yellow
 try {
-    Invoke-RestMethod -Uri "$baseUrl/instance/delete/$instanceName" -Method Delete -Headers $headers -ErrorAction SilentlyContinue | Out-Null
+    Invoke-RestMethod -Uri "$BaseUrl/instance/delete/$InstanceName" -Method Delete -Headers $headers -ErrorAction SilentlyContinue | Out-Null
     Start-Sleep -Seconds 2
 } catch {}
 
 $createBody = @{
-    instanceName = $instanceName
-    token        = $apiKey
+    instanceName = $InstanceName
+    token        = $ApiKey
     qrcode       = $true
     integration  = "WHATSAPP-BAILEYS"
 } | ConvertTo-Json
@@ -47,7 +49,7 @@ $createBody = @{
 $qrBase64 = $null
 
 try {
-    $create = Invoke-RestMethod -Uri "$baseUrl/instance/create" -Method Post -Headers $headers -Body $createBody -ErrorAction Stop
+    $create = Invoke-RestMethod -Uri "$BaseUrl/instance/create" -Method Post -Headers $headers -Body $createBody -ErrorAction Stop
     Write-Host "[OK] Nova instancia criada com sucesso!" -ForegroundColor Green
 
     if ($create.qrcode.base64) {
@@ -67,7 +69,7 @@ while (-not $qrBase64 -and $poll -lt 6) {
     $poll++
     Start-Sleep -Seconds 2
     try {
-        $conn = Invoke-RestMethod -Uri "$baseUrl/instance/connect/$instanceName" -Method Get -Headers $headers -ErrorAction Stop
+        $conn = Invoke-RestMethod -Uri "$BaseUrl/instance/connect/$InstanceName" -Method Get -Headers $headers -ErrorAction Stop
         if ($conn.base64) {
             $qrBase64 = $conn.base64
             break
@@ -91,34 +93,34 @@ if ($qrBase64) {
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <title>QR Code WhatsApp - Xerife Board Games</title>
+  <title>QR Code WhatsApp - Kora AI</title>
   <style>
-    body { font-family: 'Segoe UI', system-ui, sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; background: linear-gradient(135deg, #2b1d0c 0%, #150a04 100%); color: #fff; }
-    .card { background: #ffffff; color: #212529; padding: 2.2rem; border-radius: 20px; text-align: center; box-shadow: 0 15px 35px rgba(0,0,0,0.5); max-width: 440px; border-top: 5px solid #8b4513; }
+    body { font-family: 'Segoe UI', system-ui, sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%); color: #fff; }
+    .card { background: #ffffff; color: #1e293b; padding: 2.2rem; border-radius: 20px; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.4); max-width: 440px; border-top: 5px solid #4f46e5; }
     .logo { font-size: 2.5rem; margin-bottom: 0.2rem; }
-    h2 { margin: 0 0 0.5rem 0; color: #8b4513; font-weight: 700; font-size: 1.5rem; }
-    p { color: #6c757d; font-size: 0.95rem; margin-bottom: 1.2rem; }
-    .qr-container { display: inline-block; padding: 12px; background: #fff; border: 2px dashed #8b4513; border-radius: 12px; margin-bottom: 1.2rem; }
+    h2 { margin: 0 0 0.5rem 0; color: #4f46e5; font-weight: 700; font-size: 1.5rem; }
+    p { color: #64748b; font-size: 0.95rem; margin-bottom: 1.2rem; }
+    .qr-container { display: inline-block; padding: 12px; background: #fff; border: 2px dashed #4f46e5; border-radius: 12px; margin-bottom: 1.2rem; }
     img { width: 260px; height: 260px; display: block; border-radius: 6px; }
-    ol { text-align: left; padding-left: 1.2rem; font-size: 0.9rem; color: #495057; line-height: 1.6; }
-    .footer { margin-top: 1.2rem; font-size: 0.8rem; color: #adb5bd; }
+    ol { text-align: left; padding-left: 1.2rem; font-size: 0.9rem; color: #334155; line-height: 1.6; }
+    .footer { margin-top: 1.2rem; font-size: 0.8rem; color: #94a3b8; }
   </style>
 </head>
 <body>
   <div class="card">
-    <div class="logo">🤠🎲</div>
-    <h2>Xerife Board Games</h2>
+    <div class="logo">⚡🤖</div>
+    <h2>Kora AI</h2>
     <p>Aponte a câmera do WhatsApp para conectar:</p>
     <div class="qr-container">
       <img src="$qrSrc" alt="QR Code WhatsApp" />
     </div>
     <ol>
-      <li>Abra o <b>WhatsApp</b> no celular da loja</li>
+      <li>Abra o <b>WhatsApp</b> no celular</li>
       <li>Toque no <b>Menu</b> (ou Configurações)</li>
       <li>Selecione <b>Aparelhos conectados</b></li>
       <li>Toque em <b>Conectar um aparelho</b></li>
     </ol>
-    <div class="footer">Instância: XerifeAtendimento • Evolution API v2</div>
+    <div class="footer">Instância: $InstanceName • Evolution API v2</div>
   </div>
 </body>
 </html>
@@ -132,5 +134,5 @@ if ($qrBase64) {
 }
 else {
     Write-Host "`nLogs do container Docker:" -ForegroundColor Gray
-    docker logs xerife_evolution_api --tail 30
+    docker logs kora_evolution_api --tail 30
 }

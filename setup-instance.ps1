@@ -1,22 +1,24 @@
-# ==============================================================================
-# Setup Instance: XerifeAtendimento (Evolution API v2)
-# Xerife Board Games - Automacao WhatsApp
+﻿# ==============================================================================
+# Setup Instance: KoraAtendimento (Evolution API v2)
+# Kora AI - Plataforma Omnichannel Inteligente
 # ==============================================================================
 
-$baseUrl = "http://localhost:8080"
-$apiKey = "XerifeBG_Token_Secreto_2026"
-$instanceName = "XerifeAtendimento"
-$webhookUrl = "http://host.docker.internal:5000/api/whatsapp/webhook"
+param (
+    [string]$InstanceName = "KoraAtendimento",
+    [string]$ApiKey = "Kora_Token_Secreto_2026",
+    [string]$BaseUrl = "http://localhost:8080",
+    [string]$WebhookUrl = "http://kora_api:5001/api/whatsapp/webhook"
+)
 
 $headers = @{
-    "apikey"       = $apiKey
+    "apikey"       = $ApiKey
     "Content-Type" = "application/json"
 }
 
 # Payload padrao compativel com Evolution API v2
 $createPayload = @{
-    instanceName    = $instanceName
-    token           = $apiKey
+    instanceName    = $InstanceName
+    token           = $ApiKey
     qrcode          = $true
     integration     = "WHATSAPP-BAILEYS"
     readStatus      = $false
@@ -30,13 +32,11 @@ $settingsPayload = @{
     alwaysOnline = $true
     readMessages = $true
 } | ConvertTo-Json
-    readMessages = $true
-} | ConvertTo-Json
 
 $webhookPayload = @{
     webhook = @{
         enabled  = $true
-        url      = $webhookUrl
+        url      = $WebhookUrl
         byEvents = $false
         base64   = $false
         events   = @("MESSAGES_UPSERT")
@@ -44,18 +44,18 @@ $webhookPayload = @{
 } | ConvertTo-Json -Depth 5
 
 Write-Host "==========================================================" -ForegroundColor Cyan
-Write-Host "[Xerife Board Games] Inicializacao de Instancia WhatsApp" -ForegroundColor Yellow
+Write-Host "[Kora AI] Inicializacao de Instancia WhatsApp ($InstanceName)" -ForegroundColor Yellow
 Write-Host "==========================================================" -ForegroundColor Cyan
 
 # 1. Aguardar Evolution API ficar online
-Write-Host "`n[1/4] Verificando se a Evolution API esta online em $baseUrl..." -ForegroundColor Gray
+Write-Host "`n[1/4] Verificando se a Evolution API esta online em $BaseUrl..." -ForegroundColor Gray
 $retryCount = 0
 $maxRetries = 20
 $apiOnline = $false
 
 while (-not $apiOnline -and $retryCount -lt $maxRetries) {
     try {
-        $response = Invoke-RestMethod -Uri "$baseUrl/" -Method Get -TimeoutSec 3 -ErrorAction Stop
+        $response = Invoke-RestMethod -Uri "$BaseUrl/" -Method Get -TimeoutSec 3 -ErrorAction Stop
         $apiOnline = $true
         Write-Host "[OK] Evolution API esta online e respondendo!" -ForegroundColor Green
     }
@@ -67,23 +67,23 @@ while (-not $apiOnline -and $retryCount -lt $maxRetries) {
 }
 
 if (-not $apiOnline) {
-    Write-Host "[ERRO] Nao foi possivel conectar na Evolution API em $baseUrl." -ForegroundColor Red
+    Write-Host "[ERRO] Nao foi possivel conectar na Evolution API em $BaseUrl." -ForegroundColor Red
     exit 1
 }
 
 # 2. Verificar se a instancia ja existe ou precisa ser criada
-Write-Host "`n[2/4] Verificando status da instancia '$instanceName'..." -ForegroundColor Gray
+Write-Host "`n[2/4] Verificando status da instancia '$InstanceName'..." -ForegroundColor Gray
 $instanceExists = $false
 $qrBase64 = $null
 
 try {
-    $instances = Invoke-RestMethod -Uri "$baseUrl/instance/fetchInstances" -Method Get -Headers $headers -ErrorAction Stop
+    $instances = Invoke-RestMethod -Uri "$BaseUrl/instance/fetchInstances" -Method Get -Headers $headers -ErrorAction Stop
     foreach ($inst in $instances) {
         $foundName = $inst.name
         if (-not $foundName) { $foundName = $inst.instance.instanceName }
         if (-not $foundName) { $foundName = $inst.instanceName }
 
-        if ($foundName -eq $instanceName) {
+        if ($foundName -eq $InstanceName) {
             $instanceExists = $true
             break
         }
@@ -92,13 +92,13 @@ try {
 catch {}
 
 if ($instanceExists) {
-    Write-Host "[OK] Instancia '$instanceName' ja existe no sistema." -ForegroundColor Green
+    Write-Host "[OK] Instancia '$InstanceName' ja existe no sistema." -ForegroundColor Green
 }
 else {
-    Write-Host "Criando instancia '$instanceName'..." -ForegroundColor Cyan
+    Write-Host "Criando instancia '$InstanceName'..." -ForegroundColor Cyan
     try {
-        $createResponse = Invoke-RestMethod -Uri "$baseUrl/instance/create" -Method Post -Headers $headers -Body $createPayload -ErrorAction Stop
-        Write-Host "[OK] Instancia '$instanceName' criada com sucesso!" -ForegroundColor Green
+        $createResponse = Invoke-RestMethod -Uri "$BaseUrl/instance/create" -Method Post -Headers $headers -Body $createPayload -ErrorAction Stop
+        Write-Host "[OK] Instancia '$InstanceName' criada com sucesso!" -ForegroundColor Green
         $instanceExists = $true
     }
     catch {
@@ -108,15 +108,15 @@ else {
 
 # Configurar rejeicao automatica de chamadas e configuracoes adicionais
 try {
-    Invoke-RestMethod -Uri "$baseUrl/settings/set/$instanceName" -Method Post -Headers $headers -Body $settingsPayload -ErrorAction SilentlyContinue | Out-Null
+    Invoke-RestMethod -Uri "$BaseUrl/settings/set/$InstanceName" -Method Post -Headers $headers -Body $settingsPayload -ErrorAction SilentlyContinue | Out-Null
     Write-Host "[OK] Configuracoes de chamada e privacidade aplicadas!" -ForegroundColor Green
 }
 catch {}
 
 # 3. Configurar e Confirmar Webhook
-Write-Host "`n[3/4] Configurando Webhook para $webhookUrl..." -ForegroundColor Gray
+Write-Host "`n[3/4] Configurando Webhook para $WebhookUrl..." -ForegroundColor Gray
 try {
-    Invoke-RestMethod -Uri "$baseUrl/webhook/set/$instanceName" -Method Post -Headers $headers -Body $webhookPayload -ErrorAction Stop | Out-Null
+    Invoke-RestMethod -Uri "$BaseUrl/webhook/set/$InstanceName" -Method Post -Headers $headers -Body $webhookPayload -ErrorAction Stop | Out-Null
     Write-Host "[OK] Webhook registrado com sucesso!" -ForegroundColor Green
 }
 catch {
@@ -126,9 +126,9 @@ catch {
 # 4. Obter status da conexao e Gerar Visualizacao do QR Code
 Write-Host "`n[4/4] Verificando status da conexao..." -ForegroundColor Gray
 try {
-    $stateResponse = Invoke-RestMethod -Uri "$baseUrl/instance/connectionState/$instanceName" -Method Get -Headers $headers -ErrorAction Stop
+    $stateResponse = Invoke-RestMethod -Uri "$BaseUrl/instance/connectionState/$InstanceName" -Method Get -Headers $headers -ErrorAction Stop
     $state = $stateResponse.instance.state
-    Write-Host "Status da conexao da instancia '$instanceName': $state" -ForegroundColor Cyan
+    Write-Host "Status da conexao da instancia '$InstanceName': $state" -ForegroundColor Cyan
 
     if ($state -eq "open") {
         Write-Host "`n==========================================================" -ForegroundColor Green
@@ -144,7 +144,7 @@ try {
             $qrRetries++
             Write-Host "Aguardando emissao do QR Code (tentativa $qrRetries de $maxQrRetries)..." -ForegroundColor Gray
             try {
-                $connectResponse = Invoke-RestMethod -Uri "$baseUrl/instance/connect/$instanceName" -Method Get -Headers $headers -ErrorAction Stop
+                $connectResponse = Invoke-RestMethod -Uri "$BaseUrl/instance/connect/$InstanceName" -Method Get -Headers $headers -ErrorAction Stop
                 
                 if ($connectResponse.base64) {
                     $qrBase64 = $connectResponse.base64
@@ -174,34 +174,34 @@ try {
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <title>QR Code WhatsApp - Xerife Board Games</title>
+  <title>QR Code WhatsApp - Kora AI</title>
   <style>
-    body { font-family: 'Segoe UI', system-ui, sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; background: linear-gradient(135deg, #2b1d0c 0%, #150a04 100%); color: #fff; }
-    .card { background: #ffffff; color: #212529; padding: 2.2rem; border-radius: 20px; text-align: center; box-shadow: 0 15px 35px rgba(0,0,0,0.5); max-width: 440px; border-top: 5px solid #8b4513; }
+    body { font-family: 'Segoe UI', system-ui, sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%); color: #fff; }
+    .card { background: #ffffff; color: #1e293b; padding: 2.2rem; border-radius: 20px; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.4); max-width: 440px; border-top: 5px solid #4f46e5; }
     .logo { font-size: 2.5rem; margin-bottom: 0.2rem; }
-    h2 { margin: 0 0 0.5rem 0; color: #8b4513; font-weight: 700; font-size: 1.5rem; }
-    p { color: #6c757d; font-size: 0.95rem; margin-bottom: 1.2rem; }
-    .qr-container { display: inline-block; padding: 12px; background: #fff; border: 2px dashed #8b4513; border-radius: 12px; margin-bottom: 1.2rem; }
+    h2 { margin: 0 0 0.5rem 0; color: #4f46e5; font-weight: 700; font-size: 1.5rem; }
+    p { color: #64748b; font-size: 0.95rem; margin-bottom: 1.2rem; }
+    .qr-container { display: inline-block; padding: 12px; background: #fff; border: 2px dashed #4f46e5; border-radius: 12px; margin-bottom: 1.2rem; }
     img { width: 260px; height: 260px; display: block; border-radius: 6px; }
-    ol { text-align: left; padding-left: 1.2rem; font-size: 0.9rem; color: #495057; line-height: 1.6; margin-bottom: 0; }
-    .footer { margin-top: 1.2rem; font-size: 0.8rem; color: #adb5bd; }
+    ol { text-align: left; padding-left: 1.2rem; font-size: 0.9rem; color: #334155; line-height: 1.6; margin-bottom: 0; }
+    .footer { margin-top: 1.2rem; font-size: 0.8rem; color: #94a3b8; }
   </style>
 </head>
 <body>
   <div class="card">
-    <div class="logo">🤠🎲</div>
-    <h2>Xerife Board Games</h2>
+    <div class="logo">⚡🤖</div>
+    <h2>Kora AI</h2>
     <p>Aponte a câmera do WhatsApp para conectar:</p>
     <div class="qr-container">
       <img src="$qrSrc" alt="QR Code WhatsApp" />
     </div>
     <ol>
-      <li>Abra o <b>WhatsApp</b> no celular da loja</li>
+      <li>Abra o <b>WhatsApp</b> no celular</li>
       <li>Toque no <b>Menu</b> (ou Configurações)</li>
       <li>Selecione <b>Aparelhos conectados</b></li>
       <li>Toque em <b>Conectar um aparelho</b></li>
     </ol>
-    <div class="footer">Instância: XerifeAtendimento • Evolution API v2</div>
+    <div class="footer">Instância: $InstanceName • Evolution API v2</div>
   </div>
 </body>
 </html>

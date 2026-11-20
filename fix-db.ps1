@@ -1,5 +1,5 @@
 # ==============================================================================
-# Correcao automatica do schema da Evolution API v2 (Prisma / MySQL)
+# Correcao automatica do schema da Evolution API v2 (Prisma / MySQL) - Kora AI
 # ==============================================================================
 
 Write-Host "==========================================================" -ForegroundColor Cyan
@@ -8,7 +8,7 @@ Write-Host "==========================================================" -Foregro
 
 # 1. Adicionar diretamente no MySQL (sintaxe padrao MySQL 8.0)
 $sql = "ALTER TABLE Webhook ADD COLUMN headers JSON NULL;"
-docker exec -i xerife_mysql mysql -uroot -prootpassword evolution_db -e $sql 2>$null
+docker exec -i kora_mysql mysql -uroot -prootpassword evolution_db -e $sql 2>$null
 if ($LASTEXITCODE -eq 0) {
     Write-Host "[OK] Coluna 'headers' adicionada com sucesso no MySQL!" -ForegroundColor Green
 } else {
@@ -17,15 +17,15 @@ if ($LASTEXITCODE -eq 0) {
 
 # 2. Executar db push para garantir que nenhuma outra coluna esteja faltando
 Write-Host "`n[2/4] Sincronizando modelo completo do Prisma com o MySQL..." -ForegroundColor Yellow
-docker exec xerife_evolution_api npx prisma db push --schema ./prisma/mysql-schema.prisma --accept-data-loss
+docker exec kora_evolution_api npx prisma db push --schema ./prisma/mysql-schema.prisma --accept-data-loss
 
 # 3. Conferir estrutura da tabela Webhook
 Write-Host "`n[3/4] Validando colunas da tabela Webhook:" -ForegroundColor Gray
-docker exec -i xerife_mysql mysql -uroot -prootpassword evolution_db -e "DESCRIBE Webhook;"
+docker exec -i kora_mysql mysql -uroot -prootpassword evolution_db -e "DESCRIBE Webhook;"
 
 # 4. Reiniciar a Evolution API
 Write-Host "`n[4/4] Reiniciando Evolution API..." -ForegroundColor Yellow
-docker restart xerife_evolution_api | Out-Null
+docker restart kora_evolution_api | Out-Null
 Write-Host "[OK] Container reiniciado!" -ForegroundColor Green
 
 Write-Host "`nAguardando 8 segundos para a Evolution API inicializar..." -ForegroundColor Gray

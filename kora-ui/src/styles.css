@@ -1,0 +1,162 @@
+/* =========================================================================
+   Kora AI - Design System Global Styles
+   Sleek, Clean, Executive & Professional Aesthetic
+   ========================================================================= */
+
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap');
+
+:root {
+  --kora-primary: #4f46e5;
+  --kora-primary-hover: #4338ca;
+  --kora-primary-light: #eef2ff;
+  --kora-accent: #6366f1;
+  --kora-dark: #0b0f19;
+  --kora-slate-900: #0f172a;
+  --kora-slate-800: #1e293b;
+  --kora-slate-700: #334155;
+  --kora-slate-600: #475569;
+  --kora-slate-500: #64748b;
+  --kora-slate-400: #94a3b8;
+  --kora-slate-200: #e2e8f0;
+  --kora-slate-100: #f1f5f9;
+  --kora-slate-50: #f8fafc;
+  --kora-pulse: #ec4899;
+  --kora-emerald: #10b981;
+  --kora-emerald-light: #ecfdf5;
+  --kora-rose: #f43f5e;
+  --kora-rose-light: #fff1f2;
+  --kora-amber: #f59e0b;
+  --kora-amber-light: #fffbeb;
+  
+  --bs-font-sans-serif: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+body {
+  font-family: var(--bs-font-sans-serif);
+  color: #1e293b;
+  min-height: 100vh;
+  background-color: #f8fafc;
+  letter-spacing: -0.011em;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Kora Navigation & Header */
+.bg-store,
+.bg-kora,
+.bg-navbar-dark {
+  background: #0b0f19 !important;
+  border-bottom: 1px solid #1e293b !important;
+}
+
+/* Primary Brand Buttons */
+.btn-primary,
+.btn-kora {
+  background-color: var(--kora-primary) !important;
+  border-color: var(--kora-primary) !important;
+  color: #ffffff !important;
+  font-weight: 600;
+  border-radius: 8px;
+  transition: all 0.15s ease-in-out;
+}
+
+.btn-primary:hover,
+.btn-kora:hover {
+  background-color: var(--kora-primary-hover) !important;
+  border-color: var(--kora-primary-hover) !important;
+  color: #ffffff !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);
+}
+
+.btn-accent {
+  background-color: var(--kora-accent) !important;
+  border-color: var(--kora-accent) !important;
+  color: #ffffff !important;
+  font-weight: 600;
+  border-radius: 8px;
+}
+
+.btn-accent:hover {
+  background-color: var(--kora-primary) !important;
+  border-color: var(--kora-primary) !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
+}
+
+.btn-outline-primary {
+  color: var(--kora-primary) !important;
+  border-color: #c7d2fe !important;
+}
+
+.btn-outline-primary:hover {
+  background-color: var(--kora-primary-light) !important;
+  border-color: var(--kora-primary) !important;
+  color: var(--kora-primary) !important;
+}
+
+/* Typography Utilities */
+.fs-7 {
+  font-size: 0.85rem;
+}
+
+.text-xs {
+  font-size: 0.75rem;
+}
+
+.fw-semibold {
+  font-weight: 600 !important;
+}
+
+/* Inputs & Form Controls */
+.form-control,
+.form-select {
+  border-color: #e2e8f0;
+  border-radius: 8px;
+  font-size: 0.92rem;
+  padding: 0.55rem 0.85rem;
+  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.form-control:focus,
+.form-select:focus {
+  border-color: #818cf8;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+
+/* Smooth Interactive Elements */
+button {
+  transition: all 0.15s ease-in-out;
+}
+
+/* Generic Icon Utilities (clean inline SVG support) */
+.icon-svg {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+  width: 1.15em;
+  height: 1.15em;
+  stroke-width: 2;
+  stroke: currentColor;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  flex-shrink: 0;
+}
+
+.icon-svg-sm {
+  width: 1em;
+  height: 1em;
+}
+
+.icon-svg-lg {
+  width: 1.5em;
+  height: 1.5em;
+}
+
+/* Subtle Card Elevation */
+.card {
+  border-color: #e2e8f0;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.04), 0 1px 2px -1px rgba(0, 0, 0, 0.04);
+}

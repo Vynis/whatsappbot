@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none">
+  <defs>
+    <linearGradient id="koraGrad1" x1="4" y1="8" x2="44" y2="40" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#6366F1"/>
+      <stop offset="50%" stop-color="#4F46E5"/>
+      <stop offset="100%" stop-color="#2563EB"/>
+    </linearGradient>
+    <linearGradient id="koraPulse" x1="16" y1="16" x2="32" y2="32" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#EC4899"/>
+      <stop offset="100%" stop-color="#8B5CF6"/>
+    </linearGradient>
+    <filter id="coreGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="2.5" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+
+  <!-- Outer Protective Halo / Core Orbit -->
+  <rect x="3" y="3" width="42" height="42" rx="12" fill="#0F172A" stroke="#1E293B" stroke-width="1.5"/>
+
+  <!-- Left Stem of 'K' / Left Heart Lobe -->
+  <path d="M14 13C14 11.8954 14.8954 11 16 11H17C18.1046 11 19 11.8954 19 13V35C19 36.1046 18.1046 37 17 37H16C14.8954 37 14 36.1046 14 35V13Z" fill="url(#koraGrad1)"/>
+
+  <!-- Upper Branch / Converging Heart Node -->
+  <path d="M19 24.5L29.2 13.5C29.98 12.65 31.33 12.7 32.05 13.6C32.73 14.45 32.65 15.68 31.87 16.53L23.8 25.3L32.2 34.2C32.96 35.01 32.93 36.27 32.14 37.04C31.35 37.82 30.08 37.79 29.31 36.98L19 26V24.5Z" fill="url(#koraGrad1)"/>
+
+  <!-- The "Kora" Heart Core (Glowing Central Nucleus) -->
+  <circle cx="24" cy="24" r="4.2" fill="url(#koraPulse)" filter="url(#coreGlow)"/>
+  <circle cx="24" cy="24" r="2.2" fill="#FFFFFF"/>
+</svg>

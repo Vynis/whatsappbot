@@ -1,7 +1,7 @@
 # ==============================================================================
-# .gitignore para o ecossistema Xerife Board Games Bot (Monorepo)
-# - Backend: ASP.NET Core 8 Web API (XerifeBot.Api)
-# - Frontend: Angular 18 (xerife-bot-ui)
+# .gitignore para o ecossistema Kora AI (Monorepo)
+# - Backend: ASP.NET Core 8 Web API (Kora.Api)
+# - Frontend: Angular 18 (kora-ui)
 # - Infra: Docker, Evolution API v2, Redis, PostgreSQL, MySQL
 # ==============================================================================
 

@@ -1,17 +1,19 @@
-$baseUrl = "http://localhost:8080"
-$apiKey = "XerifeBG_Token_Secreto_2026"
-$instanceName = "XerifeAtendimento"
+param (
+    [string]$InstanceName = "KoraAtendimento",
+    [string]$ApiKey = "Kora_Token_Secreto_2026",
+    [string]$BaseUrl = "http://localhost:8080"
+)
 
 $headers = @{
-    "apikey"       = $apiKey
+    "apikey"       = $ApiKey
     "Content-Type" = "application/json"
 }
 
 Write-Host "==========================================================" -ForegroundColor Cyan
-Write-Host "[1/2] Resposta de /instance/connect/${instanceName}:" -ForegroundColor Yellow
+Write-Host "[1/2] Resposta de /instance/connect/${InstanceName}:" -ForegroundColor Yellow
 Write-Host "==========================================================" -ForegroundColor Cyan
 try {
-    $resp = Invoke-RestMethod -Uri "$baseUrl/instance/connect/$instanceName" -Method Get -Headers $headers
+    $resp = Invoke-RestMethod -Uri "$BaseUrl/instance/connect/$InstanceName" -Method Get -Headers $headers
     $resp | ConvertTo-Json -Depth 5
 }
 catch {
@@ -23,4 +25,4 @@ catch {
 Write-Host "`n==========================================================" -ForegroundColor Cyan
 Write-Host "[2/2] Ultimas 30 linhas do log do container Docker:" -ForegroundColor Yellow
 Write-Host "==========================================================" -ForegroundColor Cyan
-docker logs xerife_evolution_api --tail 30
+docker logs kora_evolution_api --tail 30

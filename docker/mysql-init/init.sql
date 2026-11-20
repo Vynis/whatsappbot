@@ -1,4 +1,5 @@
--- Inicialização dos bancos de dados da Xerife Board Games
+-- Inicialização dos bancos de dados do ecossistema Kora AI
+CREATE DATABASE IF NOT EXISTS `kora_db` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 CREATE DATABASE IF NOT EXISTS `evolution_db` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 CREATE DATABASE IF NOT EXISTS `xerifebot_db` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 

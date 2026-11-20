@@ -42,7 +42,7 @@ if ($currentVersion) {
     [System.IO.File]::WriteAllText($composeFile, $composeContent, [System.Text.Encoding]::UTF8)
     Write-Host "[OK] docker-compose.yml atualizado com a versao oficial!" -ForegroundColor Green
 
-    Write-Host "`nRecriando container xerife_evolution_api com a versao da Meta..." -ForegroundColor Yellow
+    Write-Host "`nRecriando container kora_evolution_api com a versao da Meta..." -ForegroundColor Yellow
     docker compose up -d --force-recreate evolution-api
 
     Write-Host "`nAguardando inicializacao da Evolution API..." -ForegroundColor Gray

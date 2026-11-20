@@ -1,15 +1,15 @@
-param(
+﻿param(
     [string]$BaseUrl = "http://localhost:5001"
 )
 
 Write-Host "==========================================================" -ForegroundColor Cyan
-Write-Host "TESTE DO MODULO OMNICHANNEL INSTAGRAM - XERIFE BOT" -ForegroundColor Cyan
+Write-Host "TESTE DO MODULO OMNICHANNEL INSTAGRAM - KORA AI" -ForegroundColor Cyan
 Write-Host "==========================================================" -ForegroundColor Cyan
 
 # 1. Teste de Validacao da Meta (GET /api/instagram/webhook)
 Write-Host "`n1. Testando validacao de Webhook da Meta (GET)..." -ForegroundColor Yellow
 $challenge = "teste_challenge_meta_12345"
-$verifyToken = "xerife_meta_verify_token_2026"
+$verifyToken = "kora_meta_verify_token_2026"
 $verifyUrl = "{0}/api/instagram/webhook?hub.mode=subscribe&hub.verify_token={1}&hub.challenge={2}" -f $BaseUrl, $verifyToken, $challenge
 
 try {
@@ -47,7 +47,7 @@ $dmPayloadObj = @{
                     recipient = @{ id = "17841400000000000" }
                     message = @{
                         mid = "m_teste_simulacao_dm"
-                        text = "Quero sugestoes de jogos para 4 pessoas!"
+                        text = "Olá! Gostaria de informações sobre o atendimento."
                         is_echo = $false
                     }
                 }
@@ -79,10 +79,10 @@ $commentPayloadObj = @{
                     field = "comments"
                     value = @{
                         id = "comment_teste_simulado_$randomId"
-                        text = "Esse jogo e sensacional! Tem disponivel para locacao?"
+                        text = "Excelente produto! Gostaria de mais detalhes."
                         from = @{
                             id = "11223344"
-                            username = "jogador_xerife"
+                            username = "cliente_kora"
                         }
                         media = @{
                             id = "media_post_12345"

@@ -1,19 +1,18 @@
 param (
-    [string]$PhoneNumber
+    [string]$PhoneNumber,
+    [string]$InstanceName = "KoraAtendimento",
+    [string]$ApiKey = "Kora_Token_Secreto_2026",
+    [string]$BaseUrl = "http://localhost:8080"
 )
 
-$baseUrl = "http://localhost:8080"
-$apiKey = "XerifeBG_Token_Secreto_2026"
-$instanceName = "XerifeAtendimento"
-
 $headers = @{
-    "apikey"       = $apiKey
+    "apikey"       = $ApiKey
     "Content-Type" = "application/json"
 }
 
 if (-not $PhoneNumber) {
     Write-Host "==========================================================" -ForegroundColor Cyan
-    Write-Host "Pareamento por Codigo de 8 digitos (Pairing Code)" -ForegroundColor Yellow
+    Write-Host "Kora AI - Pareamento por Codigo de 8 digitos (Pairing Code)" -ForegroundColor Yellow
     Write-Host "==========================================================" -ForegroundColor Cyan
     $PhoneNumber = Read-Host "Informe o numero do WhatsApp (ex: 62991333856)"
 }
@@ -30,7 +29,7 @@ Write-Host "`n[1/3] Tentando obter codigo via GET /instance/connect ($cleanNumbe
 $code = $null
 
 try {
-    $resp = Invoke-RestMethod -Uri "$baseUrl/instance/connect/$instanceName`?number=$cleanNumber" -Method Get -Headers $headers -ErrorAction Stop
+    $resp = Invoke-RestMethod -Uri "$BaseUrl/instance/connect/$InstanceName`?number=$cleanNumber" -Method Get -Headers $headers -ErrorAction Stop
     if ($resp.code) { $code = $resp.code }
     elseif ($resp.pairingCode) { $code = $resp.pairingCode }
     if (-not $code) {
@@ -45,7 +44,7 @@ if (-not $code) {
     Write-Host "`n[2/3] Tentando via POST /instance/connect ($cleanNumber)..." -ForegroundColor Cyan
     $body = @{ number = $cleanNumber } | ConvertTo-Json
     try {
-        $respPost = Invoke-RestMethod -Uri "$baseUrl/instance/connect/$instanceName" -Method Post -Headers $headers -Body $body -ErrorAction Stop
+        $respPost = Invoke-RestMethod -Uri "$BaseUrl/instance/connect/$InstanceName" -Method Post -Headers $headers -Body $body -ErrorAction Stop
         if ($respPost.code) { $code = $respPost.code }
         elseif ($respPost.pairingCode) { $code = $respPost.pairingCode }
         if (-not $code) {
@@ -61,7 +60,7 @@ if (-not $code) {
     Write-Host "`n[3/3] Tentando via POST /instance/pair ($cleanNumber)..." -ForegroundColor Cyan
     $pairBody = @{ phone = $cleanNumber } | ConvertTo-Json
     try {
-        $respPair = Invoke-RestMethod -Uri "$baseUrl/instance/pair" -Method Post -Headers $headers -Body $pairBody -ErrorAction Stop
+        $respPair = Invoke-RestMethod -Uri "$BaseUrl/instance/pair" -Method Post -Headers $headers -Body $pairBody -ErrorAction Stop
         if ($respPair.code) { $code = $respPair.code }
         elseif ($respPair.pairingCode) { $code = $respPair.pairingCode }
         if (-not $code) {
@@ -88,5 +87,5 @@ if ($code) {
 else {
     Write-Host "`n[!] O WhatsApp nao gerou o pairing code nesta tentativa." -ForegroundColor Yellow
     Write-Host "Verifique os logs recentes do container:" -ForegroundColor Gray
-    docker logs xerife_evolution_api --tail 15
+    docker logs kora_evolution_api --tail 15
 }
